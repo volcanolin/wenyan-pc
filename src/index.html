@@ -69,6 +69,12 @@
                     </svg>
                     主题
                 </button>
+                <button id="fontSelectorButton" class="overlay-button" onclick="displayFontSelector(this);">
+                    <svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <use href="#fontIcon"></use>
+                    </svg>
+                    字体
+                </button>
                 <button class="overlay-button" onclick="onPeviewModeChange(this);">
                     <svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <use href="#desktopIcon"></use>
@@ -158,8 +164,7 @@
                 <rect x="14" y="14" width="20" height="20" rx="2" fill="none" stroke="#333" stroke-width="4" />
             </symbol>
             <symbol id="plusIcon" viewBox="0 0 48 48">
-                <path d="M24.0605 10L24.0239 38" stroke="#333" stroke-width="4" stroke-linecap="round"
-                    stroke-linejoin="round" />
+                <path d="M24.0605 10L24.0239 38" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
                 <path d="M10 24L38 24" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
             </symbol>
             <symbol id="editIcon" viewBox="0 0 48 48">
@@ -167,6 +172,14 @@
                 <path d="M13 18H21" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
                 <path d="M13 28H25" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
                 <path d="M40.9991 6.00098L29.0044 17.9958" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            </symbol>
+            <symbol id="fontIcon" viewBox="0 0 48 48">
+                <path d="M16 6H8C6.89543 6 6 6.89543 6 8V16" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M32 6H40C41.1046 6 42 6.89543 42 8V16" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M16 42H8C6.89543 42 6 41.1046 6 40V32" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M32 42H40C41.1046 42 42 41.1046 42 40V32" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M16 16H32" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M24 16V34" stroke="#333" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
             </symbol>
         </svg>
         <div class="modal micromodal-slide" id="modal-1" aria-hidden="true">

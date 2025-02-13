@@ -91,6 +91,12 @@ let rightReady = false;
 let customThemeContent = '';
 let selectedCustomTheme = '';
 
+const fontFamilies = [
+    { id: 'theme', name: '跟随主题', value: null },
+    { id: 'sans-serif', name: '无衬线', value: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' },
+    { id: 'serif', name: '衬线', value: '"Noto Serif CJK SC", "Noto Serif SC", "Source Han Serif SC", "Source Han Serif", serif' }
+];
+
 window.addEventListener('message', async (event) => {
     if (event.data) {
         if (event.data.type === 'onReady') {
@@ -120,6 +126,9 @@ window.addEventListener('message', async (event) => {
         } else if (event.data.type === 'onChangeCss') {
             customThemeContent = event.data.value;
             updateThemePreview();
+        } else if (event.data.type === 'updateFont') {
+            const fontFamily = event.data.fontFamily;
+            document.getElementById('wenyan').style.fontFamily = fontFamily;
         }
     }
 });
@@ -127,12 +136,35 @@ window.addEventListener('message', async (event) => {
 async function load() {
     if (leftReady && rightReady) {
         try {
+            // 初始化数据库
+            await invoke('plugin:sql|load', {
+                db: 'sqlite:data.db'
+            });
+            await invoke('plugin:sql|execute', {
+                db: 'sqlite:data.db',
+                query: `CREATE TABLE IF NOT EXISTS CustomTheme (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    createdAt TEXT NOT NULL
+                );`,
+                values: []
+            });
+
+            // 先加载主题列表
+            await loadCustomThemes();
+            
+            // 然后添加字体选择器
+            addFontSelector();
+            
             let lastArticle = localStorage.getItem('lastArticle');
             if (!lastArticle) {
                 const resourcePath = await resolveResource('resources/example.md');
                 lastArticle = await readTextFile(resourcePath);
             }
             content = lastArticle;
+            
+            // 加载编辑器内容
             const iframe = document.getElementById('leftFrame');
             if (iframe) {
                 const message = {
@@ -141,6 +173,8 @@ async function load() {
                 };
                 iframe.contentWindow.postMessage(message, '*');
             }
+
+            // 加载主题
             let gzhTheme = localStorage.getItem('gzhTheme');
             if (gzhTheme) {
                 selectedTheme = gzhTheme;
@@ -155,14 +189,26 @@ async function load() {
                 const themeResponse = await fetch(`themes/${selectedTheme}.css`);
                 customThemeContent = await themeResponse.text();
             }
-            document.getElementById(selectedTheme).classList.add('selected');
-            // 加载上次使用的高亮主题
+
+            // 设置选中的主题
+            const themeElement = document.getElementById(selectedTheme);
+            if (themeElement) {
+                themeElement.classList.add('selected');
+            }
+
+            // 加载高亮主题
             const savedTheme = localStorage.getItem('highlight-theme');
             if (savedTheme) {
                 const themeId = `highlight-${savedTheme}`;
-                document.getElementById(themeId)?.classList.add('selected');
+                const highlightElement = document.getElementById(themeId);
+                if (highlightElement) {
+                    highlightElement.classList.add('selected');
+                }
             }
+
+            // 更新预览
             onUpdate();
+
         } catch (error) {
             console.error('Error reading file:', error);
             await message(`${error}`, 'Error reading file');
@@ -468,6 +514,7 @@ async function loadCustomThemes() {
     const ul = document.getElementById('gzhThemeSelector');
     if (ul) {
         ul.innerHTML = '';
+        // 添加内置主题
         builtinThemes.forEach((i) => {
             const li = document.createElement('li');
             li.setAttribute('id', i.id);
@@ -480,11 +527,64 @@ async function loadCustomThemes() {
             ul.appendChild(li);
         });
 
-        const separator = document.createElement('li');
-        separator.classList.add('separator');
-        separator.textContent = '代码高亮主题';
-        ul.appendChild(separator);
+        // 加载自定义主题
+        const customThemes = await invoke('plugin:sql|select', {
+            db: 'sqlite:data.db',
+            query: 'SELECT * FROM CustomTheme',
+            values: []
+        });
 
+        // 如果存在自定义主题，添加分隔符和主题列表
+        if (customThemes && customThemes.length > 0) {
+            // 添加自定义主题分隔符
+            const customSeparator = document.createElement('li');
+            customSeparator.classList.add('separator');
+            customSeparator.textContent = '自定义主题';
+            ul.appendChild(customSeparator);
+
+            // 添加自定义主题列表
+            customThemes.forEach((i, index) => {
+                const li = document.createElement('li');
+                li.setAttribute('id', `customTheme${i.id}`);
+                const span1 = document.createElement('span');
+                span1.innerHTML = `${i.name}`;
+                span1.addEventListener('dblclick', () => showRenameInput(i.id, span1));
+                
+                const span2 = document.createElement('span');
+                span2.innerHTML = `<svg width="12" height="16" fill="none" xmlns="http://www.w3.org/2000/svg"><use href="#editIcon"></use></svg>`;
+                span2.addEventListener('click', () => showCssEditor(`${i.id}`));
+                
+                li.appendChild(span1);
+                li.appendChild(span2);
+                if (index === 0) {
+                    li.classList.add('border-li');
+                }
+                ul.appendChild(li);
+            });
+        }
+
+        // 添加"创建新主题"按钮（如果自定义主题数量小于3）
+        if (customThemes && customThemes.length < 3) {
+            const li = document.createElement('li');
+            li.setAttribute('id', 'create-theme');
+            li.classList.add('border-li');
+            const span1 = document.createElement('span');
+            span1.innerHTML = '创建新主题';
+            const span2 = document.createElement('span');
+            span2.innerHTML = `<svg width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg"><use href="#plusIcon"></use></svg>`;
+            span2.addEventListener('click', () => showCssEditor());
+            li.appendChild(span1);
+            li.appendChild(span2);
+            ul.appendChild(li);
+        }
+
+        // 添加代码高亮主题分隔符
+        const highlightSeparator = document.createElement('li');
+        highlightSeparator.classList.add('separator');
+        highlightSeparator.textContent = '代码高亮主题';
+        ul.appendChild(highlightSeparator);
+
+        // 添加代码高亮主题
         highlightThemes.forEach((theme) => {
             const li = document.createElement('li');
             li.setAttribute('id', `highlight-${theme.id}`);
@@ -495,47 +595,14 @@ async function loadCustomThemes() {
             ul.appendChild(li);
         });
 
-        await invoke('plugin:sql|load', {
-            db: 'sqlite:data.db'
-        });
-        await invoke('plugin:sql|execute', {
-            db: 'sqlite:data.db',
-            query: `CREATE TABLE IF NOT EXISTS CustomTheme (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                content TEXT NOT NULL,
-                createdAt TEXT NOT NULL
-            );
-        `,
-            values: []
-        });
-        const customThemes = await invoke('plugin:sql|select', {
-            db: 'sqlite:data.db',
-            query: 'SELECT * FROM CustomTheme',
-            values: []
-        });
-        // console.log(customThemes);
+        // 设置主题选择器的高度
         if (customThemes && customThemes.length > 0) {
-            customThemes.forEach((i, index) => {
-                const li = document.createElement('li');
-                li.setAttribute('id', `customTheme${i.id}`);
-                const span1 = document.createElement('span');
-                span1.innerHTML = `${i.name}`;
-                const span2 = document.createElement('span');
-                span2.innerHTML = `<svg width="12" height="16" fill="none" xmlns="http://www.w3.org/2000/svg"><use href="#editIcon"></use></svg>`;
-                span2.addEventListener('click', () => showCssEditor(`${i.id}`));
-                li.appendChild(span1);
-                li.appendChild(span2);
-                if (index === 0) {
-                    li.classList.add('border-li');
-                }
-                ul.appendChild(li);
-            });
             const height = calcHeight(customThemes.length);
             document.getElementById('themeOverlay').setAttribute("style", `height: ${height}px;`);
         } else {
             document.getElementById('themeOverlay').removeAttribute("style");
         }
+
         const listItems = ul.querySelectorAll('li');
         listItems.forEach((item) => {
             item.addEventListener('click', function() {
@@ -559,19 +626,6 @@ async function loadCustomThemes() {
                 }
             });
         });
-        if (customThemes && customThemes.length < 3) {
-            const li = document.createElement('li');
-            li.setAttribute('id', 'create-theme');
-            li.classList.add('border-li');
-            const span1 = document.createElement('span');
-            span1.innerHTML = '创建新主题';
-            const span2 = document.createElement('span');
-            span2.innerHTML = `<svg width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg"><use href="#plusIcon"></use></svg>`;
-            span2.addEventListener('click', () => showCssEditor());
-            li.appendChild(span1);
-            li.appendChild(span2);
-            ul.appendChild(li);
-        }
     }
 }
 
@@ -734,12 +788,145 @@ function hideBubble() {
 }
 
 function calcHeight(customThemeCount) {
-    // 基础高度 + 内置主题高度 + 分隔线高度 + 代码高亮主题高度 + 自定义主题高度
-    return 240 + (Math.min(customThemeCount, 2) * 25) + (highlightThemes.length * 25) + 30;
+    // 基础高度 + 内置主题高度 + 两个分隔线高度 + 代码高亮主题高度 + 自定义主题高度
+    const separatorHeight = customThemeCount > 0 ? 60 : 30; // 如果有自定义主题则是两个分隔符的高度，否则一个
+    return 240 + (Math.min(customThemeCount, 2) * 25) + separatorHeight + (highlightThemes.length * 25);
 }
 
 async function changeHighlightTheme(theme) {
     localStorage.setItem('highlight-theme', theme);
     highlightStyle = `highlight/styles/${theme}.min.css`;
     onUpdate();
+}
+
+function showRenameInput(themeId, span) {
+    const oldName = span.innerText;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = oldName;
+    input.style.width = '120px';
+    input.style.border = '1px solid #ccc';
+    input.style.padding = '2px 4px';
+    input.style.borderRadius = '3px';
+    
+    span.innerHTML = '';
+    span.appendChild(input);
+    input.focus();
+    
+    async function finishRename() {
+        const newName = input.value.trim();
+        if (newName && newName !== oldName) {
+            await renameCustomTheme(themeId, newName);
+            span.innerHTML = newName;
+        } else {
+            span.innerHTML = oldName;
+        }
+    }
+    
+    input.addEventListener('blur', finishRename);
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            finishRename();
+        }
+    });
+}
+
+async function renameCustomTheme(id, newName) {
+    await invoke('plugin:sql|execute', {
+        db: 'sqlite:data.db',
+        query: 'UPDATE CustomTheme SET name = ? WHERE id = ?;',
+        values: [newName, id]
+    });
+}
+
+function addFontSelector() {
+    // 不再需要这个函数，因为我们使用了 onclick 属性
+}
+
+function displayFontSelector(button) {
+    // 先移除已存在的选择器
+    const existingSelector = document.getElementById('fontSelector');
+    if (existingSelector) {
+        existingSelector.remove();
+    }
+
+    const selector = document.createElement('div');
+    selector.id = 'fontSelector';
+    selector.style.cssText = `
+        position: fixed;
+        background: white;
+        border: 1px solid #eee;
+        border-radius: 4px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        z-index: 100;
+        width: 120px;
+        pointer-events: auto;
+    `;
+
+    fontFamilies.forEach(font => {
+        const option = document.createElement('div');
+        option.style.cssText = `
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+        `;
+        option.textContent = font.name;
+
+        const currentFont = localStorage.getItem('preferred-font') || 'theme';
+        if (currentFont === font.id) {
+            option.style.backgroundColor = '#f0f0f0';
+        }
+
+        option.onmouseover = () => {
+            option.style.backgroundColor = '#f0f0f0';
+        };
+        option.onmouseout = () => {
+            if (currentFont !== font.id) {
+                option.style.backgroundColor = '';
+            }
+        };
+        option.onclick = (e) => {
+            e.stopPropagation();
+            localStorage.setItem('preferred-font', font.id);
+            if (font.id === 'theme') {
+                updatePreviewFont(null);
+            } else {
+                updatePreviewFont(font.value);
+            }
+            selector.remove();
+        };
+
+        selector.appendChild(option);
+    });
+
+    // 调整定位，让选择框更靠近按钮
+    const rect = button.getBoundingClientRect();
+    selector.style.top = `${rect.top}px`;
+    selector.style.left = `${rect.left - 120}px`;
+
+    document.body.appendChild(selector);
+
+    // 使用捕获阶段处理点击事件，确保在其他点击事件之前处理
+    function handleClick(e) {
+        if (!selector.contains(e.target) && !button.contains(e.target)) {
+            selector.remove();
+            document.removeEventListener('click', handleClick, true);
+        }
+    }
+
+    // 延迟添加事件监听，避免立即触发
+    requestAnimationFrame(() => {
+        document.addEventListener('click', handleClick, true);
+    });
+}
+
+function updatePreviewFont(fontFamily) {
+    const iframe = document.getElementById('rightFrame');
+    if (iframe) {
+        const message = {
+            type: 'updateFont',
+            fontFamily: fontFamily
+        };
+        iframe.contentWindow.postMessage(message, '*');
+    }
 }

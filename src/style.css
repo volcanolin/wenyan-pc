@@ -28,3 +28,23 @@ body {
     position: absolute;
     left: -9999px;
 }
+
+#gzhThemeSelector li span:first-child {
+    cursor: default;
+}
+
+#gzhThemeSelector li[id^="customTheme"] span:first-child {
+    cursor: text;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+#gzhThemeSelector li[id^="customTheme"] span:first-child:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+#gzhThemeSelector li[id^="customTheme"] input {
+    font-size: inherit;
+    font-family: inherit;
+    color: inherit;
+}

@@ -333,6 +333,43 @@ function getContentForGzh() {
             element.insertBefore(buildPseudoSpan(beforeResults), element.firstChild);
         }
     });
+    // 处理任务列表
+    elements = clonedWenyan.querySelectorAll('li input[type="checkbox"]');
+    elements.forEach(checkbox => {
+        // 创建一个 span 来模拟复选框
+        const checkboxSpan = document.createElement('span');
+        // 使用特殊字符：☐(空白框) 或 ☑(选中框)
+        checkboxSpan.innerHTML = checkbox.checked ? '☑' : '☐';
+        checkboxSpan.style.marginRight = '0.5em';
+        checkboxSpan.style.verticalAlign = 'middle';
+        checkboxSpan.style.fontSize = '16px';
+        
+        // 替换原有复选框
+        checkbox.parentNode.replaceChild(checkboxSpan, checkbox);
+        
+        // 获取所有兄弟节点并包装在一个 section 中
+        const wrapper = document.createElement('section');
+        wrapper.style.display = 'inline';
+        wrapper.style.verticalAlign = 'middle';
+        
+        let node = checkboxSpan.nextSibling;
+        while (node) {
+            const next = node.nextSibling;
+            wrapper.appendChild(node);
+            node = next;
+        }
+        checkboxSpan.insertAdjacentElement('afterend', wrapper);
+    });
+    // 添加字体处理
+    const preferredFont = localStorage.getItem('preferred-font') || 'theme';
+    if (preferredFont !== 'theme') {
+        // 直接使用存储的字体值，不依赖 fontFamilies
+        const fontFamily = preferredFont === 'serif' 
+            ? '"Noto Serif CJK SC", "Noto Serif SC", "Source Han Serif SC", "Source Han Serif", serif'
+            : '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+        // 直接设置内联样式，确保复制时字体样式也被复制
+        clonedWenyan.style.setProperty('font-family', fontFamily, 'important');
+    }
     // 直接返回结果，移除列表项的额外处理
     clonedWenyan.setAttribute("data-provider", "WenYan");
     return `${clonedWenyan.outerHTML.replace(/class="mjx-solid"/g, 'fill="none" stroke-width="70"')}`;
@@ -623,6 +660,15 @@ window.addEventListener('message', (event) => {
             setPreviewMode(event.data.previewMode);
         } else if (event.data.type === 'onFootnoteChange') {
             addFootnotes();
+        } else if (event.data.type === 'updateFont') {
+            const fontFamily = event.data.fontFamily;
+            const wenyan = document.getElementById('wenyan');
+            if (fontFamily === null) {
+                wenyan.style.removeProperty('font-family');
+            } else {
+                // 直接设置内联样式
+                wenyan.style.setProperty('font-family', fontFamily, 'important');
+            }
         }
     }
 });
