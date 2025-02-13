@@ -1,0 +1,88 @@
+{
+    "build": {
+        "devPath": "../src",
+        "distDir": "../src",
+        "withGlobalTauri": true
+    },
+    "package": {
+        "productName": "文颜",
+        "version": "../package.json"
+    },
+    "tauri": {
+        "allowlist": {
+            "all": false,
+            "http": {
+                "all": true,
+                "scope": ["https://**"]
+            },
+            "dialog": {
+                "save": true,
+                "open": true,
+                "message": true
+            },
+            "fs": {
+                "scope": [
+                    "**"
+                ],
+                "readDir": true,
+                "readFile": true,
+                "writeFile": true
+            },
+            "path": {
+                "all": true
+            },
+            "window": {
+                "all": false,
+                "close": true,
+                "hide": true,
+                "show": true,
+                "maximize": true,
+                "minimize": true,
+                "unmaximize": true,
+                "unminimize": true,
+                "startDragging": true
+            }
+        },
+        "windows": [
+            {
+                "title": "文颜",
+                "decorations": false,
+                "width": 1200,
+                "height": 800,
+                "minWidth": 840,
+                "minHeight": 580
+            }
+        ],
+        "security": {
+            "csp": null
+        },
+        "bundle": {
+            "active": true,
+            "targets": "all",
+            "identifier": "com.yztech.WenYan",
+            "icon": [
+                "icons/32x32.png",
+                "icons/128x128.png",
+                "icons/128x128@2x.png",
+                "icons/icon.icns",
+                "icons/icon.ico"
+            ],
+            "resources": [
+                "resources/*"
+            ],
+            "copyright": "© 2024 Lei Cao. All rights reserved.",
+            "windows": {
+                "wix": {
+                    "language": "zh-CN"
+                },
+                "nsis": {
+                    "languages": [
+                        "SimpChinese",
+                        "English"
+                    ],
+                    "displayLanguageSelector": true
+                }
+            }
+        }
+    }
+}

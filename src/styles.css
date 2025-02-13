@@ -1,0 +1,280 @@
+:root {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #0f0f0f;
+    background-color: #ffffff;
+
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    width: 100%;
+    height: 100vh;
+    font-size: 16px;
+    margin: 0;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+.body {
+    display: flex;
+    flex-flow: column;
+    height: 100%;
+    border: 1px solid;
+    border-color: #d1d5db;
+    /* border-radius: 5px; */
+}
+
+.container {
+    display: flex;
+    flex-flow: row;
+    flex-grow: 1;
+}
+
+.container iframe {
+    flex: 1;
+    max-width: 50%;
+    border: none;
+}
+
+.overlay {
+    position: absolute;
+    top: 30px;
+    right: 20px;
+    width: 100px;
+    height: 180px;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: start;
+    opacity: 1;
+    transition: opacity 0.3s;
+    padding-top: 15px;
+}
+
+.theme-overlay {
+    position: absolute;
+    top: 35px;
+    right: 20px;
+    width: 200px;
+    height: auto;
+    max-height: 400px;
+    overflow-y: auto;
+    background-color: #ffffff;
+    display: flex;
+    opacity: 1;
+    transition: opacity 0.3s;
+    z-index: 1;
+    display: none;
+    padding: 10px 0;
+    border: 1px solid;
+    border-color: #d1d5db;
+    border-radius: 5px;
+}
+
+.theme-overlay ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.theme-overlay li {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    cursor: default;
+    padding: 3px 10px;
+}
+
+.theme-overlay li.selected {
+    background-color: #1c90ff;
+    color: #fff;
+}
+
+.button-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.overlay-button {
+    padding: 4px 8px;
+    background-color: #ffffff;
+    color: #000000;
+    border: 1px solid;
+    border-color: #d1d5db;
+    border-radius: 5px;
+    font-size: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    text-align: center;
+}
+
+.overlay-button svg {
+    width: 14px;
+    height: 14px;
+    margin-inline-end: 8px;
+}
+
+.titlebar {
+    height: 30px;
+    background: #e5e7eb;
+    user-select: none;
+    display: flex;
+    justify-content: flex-end;
+}
+.titlebar-button {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: #e5e7eb;
+}
+.titlebar-button:hover {
+    background: #ffffff;
+}
+.titlebar-title {
+    display: inline-flex;
+    align-items: center;
+    text-align: left;
+    font-weight: bold;
+    padding-left: 30px;
+    position: relative;
+    margin-left: 10px;
+    cursor: default;
+}
+
+.titlebar-spacer {
+    display: inline-flex;
+    flex-grow: 1;
+    position: relative;
+    cursor: default;
+}
+
+.titlebar-title::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    background-image: url('icon/wenyan.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.main-menu {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+    top: 35px;
+    left: 20px;
+    z-index: 100;
+    padding: 4px 16px;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+    top: 35px;
+    right: 20px;
+    z-index: 100;
+    padding: 4px 16px;
+}
+.dropdown-link {
+    padding: 8px 0;
+    display: block;
+    font-size: 13px;
+    text-decoration: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    .titlebar,
+    .titlebar-button,
+    .titlebar-svg {
+        color: #f6f6f6;
+        background-color: #374151;
+    }
+    .titlebar-button #mediumicon {
+        filter: invert(1); /* 深色模式，反转颜色 */
+    }
+    .titlebar button:hover {
+        background-color: #a0a0a0; /* 鼠标悬浮时的背景颜色 */
+    }
+}
+
+#about-btn {
+    color: #000;
+}
+
+#about-btn:hover {
+    color: #000;
+}
+
+#about-btn:active {
+    color: #000;
+}
+
+li span svg {
+    cursor: pointer;
+}
+
+.border-li {
+    margin-top: 3px;
+    padding-top: 3px;
+    border-top: 1px solid #f0f0f0;
+}
+
+/* 修改分隔线样式，使其与现有设计保持一致 */
+.separator {
+    padding: 3px 10px;  /* 与现有 li 样式保持一致 */
+    color: #666;
+    font-size: 13px;    /* 与现有字体大小保持一致 */
+    background: #f5f5f5;
+    border-top: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: default;
+    margin: 5px 0;
+}
+
+/* 修改代码高亮主题选项样式，与现有主题选项保持一致 */
+.highlight-theme {
+    padding: 3px 10px;  /* 与现有 li 样式保持一致 */
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;  /* 与现有布局保持一致 */
+    font-size: 13px;    /* 与现有字体大小保持一致 */
+}
+
+.highlight-theme:hover {
+    background-color: #f5f5f5;
+}
+
+.highlight-theme.selected {
+    background-color: #1c90ff;  /* 使用现有的选中颜色 */
+    color: #fff;               /* 使用现有的选中文字颜色 */
+}
+
+/* 修改主题选择面板高度计算 */
+
+/* 添加代码块字体样式 */
+pre, pre code, code {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 14px;
+    line-height: 1.5;
+}

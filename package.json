@@ -1,0 +1,18 @@
+{
+  "name": "wenyan",
+  "private": true,
+  "version": "2.4.1",
+  "type": "module",
+  "scripts": {
+    "tauri-dev": "tauri dev",
+    "tauri": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^1.6.2"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^1.6.0",
+    "@tauri-apps/plugin-store": "^2.0.0-rc.1",
+    "tauri-plugin-clipboard-api": "^1.1.4"
+  }
+}
