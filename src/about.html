@@ -22,6 +22,7 @@
             width: 100%;
             font-size: 14px;
             margin: 0;
+            min-width: 500px;
         }
 
         * {
@@ -32,17 +33,18 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            /* 水平居中 */
             align-items: center;
-            /* 垂直居中 */
             height: 100vh;
-            /* 占满整个屏幕高度 */
+            padding: 10px;
             text-align: center;
         }
 
         p {
             text-align: center;
-            margin: 8px 0;
+            margin: 12px 0;
+            line-height: 1.5;
+            width: 100%;
+            word-break: break-all;
         }
 
         a {
@@ -69,17 +71,19 @@
 <body>
     <div class="centered-container">
         <p id="version"></p>
-        <p id="feedback-link">问题反馈：<a href="#">https://yuzhi.tech/contact</a></p>
-        <p>联系邮箱：<a href="mailto:support@yuzhi.tech">support@yuzhi.tech</a></p>
+        <p id="feedback-link">问题反馈：<a href="https://github.com/volcanolin/wenyan-pc/issues">https://github.com/volcanolin/wenyan-pc/issues</a></p>
+        <p>联系邮箱：<a href="mailto:1332451630@qq.com">1332451630@qq.com</a></p>
+        <p id="feedback-link">向原作者反馈：<a href="https://yuzhi.tech/contact">https://yuzhi.tech/contact</a></p>
+        <p>原作者联系邮箱：<a href="mailto:support@yuzhi.tech">support@yuzhi.tech</a></p>
         <p>© 2024 Lei Cao. All rights reserved.</p>
     </div>
     <script>
-        // const { shell } = window.__TAURI__.shell;
-        // document.getElementById('feedback-link').addEventListener('click', async (event) => {
-        //     event.preventDefault(); // 阻止默认行为
-        //     // 使用 Tauri 的 shell 模块打开链接
-        //     await shell.open("https://yuzhi.tech/contact");
-        // });
+        const { shell } = window.__TAURI__.shell;
+        document.getElementById('feedback-link').addEventListener('click', async (event) => {
+            event.preventDefault(); // 阻止默认行为
+            // 使用 Tauri 的 shell 模块打开链接
+            await shell.open("https://yuzhi.tech/contact");
+        });
     </script>
 </body>
 

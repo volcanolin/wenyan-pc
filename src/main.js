@@ -94,7 +94,7 @@ let selectedCustomTheme = '';
 const fontFamilies = [
     { id: 'theme', name: '跟随主题', value: null },
     { id: 'sans-serif', name: '无衬线', value: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' },
-    { id: 'serif', name: '衬线', value: '"Noto Serif CJK SC", "Noto Serif SC", "Source Han Serif SC", "Source Han Serif", serif' }
+    { id: 'serif', name: '衬线', value: 'Optima, "Microsoft YaHei", PingFangSC-regular, serif' }
 ];
 
 window.addEventListener('message', async (event) => {
@@ -312,7 +312,41 @@ async function onCopy(button) {
     const iframeWindow = iframe.contentWindow;
     let htmlValue = '';
     if (platform === 'gzh') {
+        // 获取当前选择的字体
+        const currentFont = localStorage.getItem('preferred-font') || 'theme';
+        const selectedFont = fontFamilies.find(f => f.id === currentFont);
+        
+        // 获取原始内容
         htmlValue = iframeWindow.getContentForGzh();
+        
+        // 如果选择了特定字体，应用字体样式但保护代码块
+        if (selectedFont && selectedFont.value) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlValue;
+            
+            // 保存代码块和行内代码的原始样式
+            const codeElements = tempDiv.querySelectorAll('pre, code');
+            const originalStyles = new Map();
+            codeElements.forEach(el => {
+                originalStyles.set(el, el.style.cssText);
+            });
+            
+            // 应用字体到所有元素
+            const elements = tempDiv.getElementsByTagName('*');
+            for (let i = 0; i < elements.length; i++) {
+                if (!elements[i].matches('pre, code')) {
+                    elements[i].style.setProperty('font-family', selectedFont.value, 'important');
+                }
+            }
+            
+            // 恢复代码块和行内代码的原始样式
+            codeElements.forEach(el => {
+                el.style.cssText = originalStyles.get(el);
+            });
+            
+            tempDiv.style.setProperty('font-family', selectedFont.value, 'important');
+            htmlValue = tempDiv.outerHTML;
+        }
     } else if (platform === 'zhihu') {
         htmlValue = iframeWindow.getContentWithMathImg();
     } else if (platform === 'juejin') {
@@ -322,7 +356,7 @@ async function onCopy(button) {
     } else {
         htmlValue = iframeWindow.getContent();
     }
-    // console.log(htmlValue);
+    
     if (platform === 'juejin') {
         await invoke('write_text_to_clipboard', { text: htmlValue });
     } else {

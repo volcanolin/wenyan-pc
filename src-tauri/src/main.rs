@@ -33,7 +33,7 @@ fn main() {
                         tauri::WindowUrl::App("about.html".into()) // 指定关于页面的路径
                     )
                     .title("关于")
-                    .inner_size(350.0, 200.0)
+                    .inner_size(500.0, 350.0)
                     .resizable(false) // 禁用窗口大小调整
                     .minimizable(false) // 禁用最小化按钮
                     .maximizable(false) // 禁用最大化按钮

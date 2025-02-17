@@ -367,7 +367,12 @@ function getContentForGzh() {
         const fontFamily = preferredFont === 'serif' 
             ? '"Noto Serif CJK SC", "Noto Serif SC", "Source Han Serif SC", "Source Han Serif", serif'
             : '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
-        // 直接设置内联样式，确保复制时字体样式也被复制
+        // 应用字体样式到所有文本元素，但排除代码块
+        const textElements = clonedWenyan.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th, span:not(pre *)');
+        textElements.forEach(element => {
+            element.style.setProperty('font-family', fontFamily, 'important');
+        });
+        // 设置根元素的字体，作为默认值
         clonedWenyan.style.setProperty('font-family', fontFamily, 'important');
     }
     // 直接返回结果，移除列表项的额外处理

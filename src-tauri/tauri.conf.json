@@ -45,6 +45,7 @@
         },
         "windows": [
             {
+                "label": "main",
                 "title": "文颜",
                 "decorations": false,
                 "width": 1200,
