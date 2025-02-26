@@ -458,19 +458,29 @@ function scroll(scrollFactor) {
 function addFootnotes(listStyle) {
     let footnotes = [];
     let footnoteIndex = 0;
-    const links = document.querySelectorAll('a[href]'); // 获取所有带有 href 的 a 元素
+    const links = document.querySelectorAll('a[href]');
     links.forEach((linkElement) => {
         const title = linkElement.textContent || linkElement.innerText;
         const href = linkElement.getAttribute("href");
         
-        // 添加脚注并获取脚注编号
         footnotes.push([++footnoteIndex, title, href]);
         
-        // 在链接后插入脚注标记
+        // 创建链接文本包装器，添加加粗和下划线样式
+        const styledLink = document.createElement('strong');
+        styledLink.style.textDecoration = 'underline'; // 添加下划线
+        const computedStyle = window.getComputedStyle(linkElement);
+        const linkColor = computedStyle.getPropertyValue('color');
+        styledLink.style.textDecorationColor = linkColor; // 下划线颜色跟随链接颜色
+        styledLink.style.color = linkColor; // 文字颜色跟随链接颜色
+        const linkClone = linkElement.cloneNode(true);
+        styledLink.appendChild(linkClone);
+        linkElement.replaceWith(styledLink);
+        
+        // 添加脚注标记
         const footnoteMarker = document.createElement('sup');
         footnoteMarker.setAttribute("class", "footnote");
         footnoteMarker.innerHTML = `[${footnoteIndex}]`;
-        linkElement.after(footnoteMarker);
+        styledLink.after(footnoteMarker);
     });
     if (footnoteIndex > 0) {
         if (!listStyle) {
