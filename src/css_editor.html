@@ -70,15 +70,23 @@
         }
 
         async function loadCss(css) {
-            const result = parseCss(css, 1);
-            const formattedCss = await prettier.format(result, {
-                parser: "css",
-                plugins: prettierPlugins,
-                printWidth: 128,
-                tabWidth: 4
-            });
-            setContent(formattedCss);
+            try {
+                const result = parseCss(css, 1);
+                const formattedCss = await prettier.format(result, {
+                    parser: "css",
+                    plugins: prettierPlugins,
+                    printWidth: 128,
+                    tabWidth: 4
+                });
+                setContent(formattedCss);
+            } catch (error) {
+                console.error('Error formatting CSS:', error);
+                setContent(css); // 如果格式化失败，使用原始内容
+            }
         }
+
+        // 将 loadCss 函数暴露到全局作用域
+        window.loadCss = loadCss;
 
         function getContent() {
             return editor.doc.getValue();

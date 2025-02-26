@@ -530,6 +530,26 @@ async function showCssEditor(customTheme) {
     }
     selectedCustomTheme = customTheme ? customTheme : '';
     const iframe = document.getElementById('cssLeftFrame');
+    
+    // 先移除可能存在的旧监听器
+    const oldHandleMessage = iframe._handleMessage;
+    if (oldHandleMessage) {
+        window.removeEventListener('message', oldHandleMessage);
+    }
+    
+    // 等待编辑器准备就绪后填充内容
+    const handleMessage = async (event) => {
+        if (event.data.type === 'onReadyCss') {
+            iframe.contentWindow.setContent(customThemeContent);
+            window.removeEventListener('message', handleMessage);
+        }
+    };
+    
+    // 保存监听器引用以便后续清理
+    iframe._handleMessage = handleMessage;
+    
+    // 先添加监听器，再设置 src
+    window.addEventListener('message', handleMessage);
     iframe.src = '/css_editor.html';
     if (selectedCustomTheme) {
         const footer = document.getElementById('footerButtonContainer');
@@ -540,6 +560,7 @@ async function showCssEditor(customTheme) {
         btn.innerHTML = '删除';
         footer.insertBefore(btn, footer.firstChild);
     }
+    
     MicroModal.show('modal-1');
     hideThemeOverlay();
 }
@@ -606,7 +627,45 @@ async function loadCustomThemes() {
             span1.innerHTML = '创建新主题';
             const span2 = document.createElement('span');
             span2.innerHTML = `<svg width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg"><use href="#plusIcon"></use></svg>`;
-            span2.addEventListener('click', () => showCssEditor());
+            span2.addEventListener('click', async () => {
+                // 获取当前选中的主题内容作为新主题的初始内容
+                const selectedTheme = document.querySelector('#gzhThemeSelector li.selected');
+                if (selectedTheme) {
+                    const themeId = selectedTheme.id;
+                    if (themeId.startsWith('customTheme')) {
+                        // 如果选中的是自定义主题，获取其内容
+                        const result = await invoke('plugin:sql|select', {
+                            db: 'sqlite:data.db',
+                            query: 'SELECT content FROM CustomTheme WHERE id = ?',
+                            values: [themeId.replace('customTheme', '')]
+                        });
+                        if (result && result.length > 0) {
+                            customThemeContent = result[0].content;
+                            showCssEditor();
+                        }
+                    } else {
+                        // 如果选中的是内置主题，获取其内容
+                        try {
+                            const response = await fetch(`themes/${themeId}.css`);
+                            customThemeContent = await response.text();
+                            showCssEditor();
+                        } catch (error) {
+                            console.error('Error loading theme:', error);
+                            await message('加载主题失败', { type: 'error' });
+                        }
+                    }
+                } else {
+                    // 如果没有选中的主题，使用默认主题内容
+                    try {
+                        const response = await fetch('themes/gzh_default.css');
+                        customThemeContent = await response.text();
+                        showCssEditor();
+                    } catch (error) {
+                        console.error('Error loading default theme:', error);
+                        await message('加载默认主题失败', { type: 'error' });
+                    }
+                }
+            });
             li.appendChild(span1);
             li.appendChild(span2);
             ul.appendChild(li);
@@ -649,7 +708,7 @@ async function loadCustomThemes() {
                         }
                     });
                     item.classList.add('selected');
-                } else if (!item.classList.contains('separator')) {
+                } else if (!item.classList.contains('separator') && item.id !== 'create-theme') {
                     listItems.forEach((li) => {
                         if (!li.classList.contains('highlight-theme')) {
                             li.classList.remove('selected');
