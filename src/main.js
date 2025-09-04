@@ -85,6 +85,7 @@ let highlightStyle = 'highlight/styles/github.min.css';
 let previewMode = 'style.css';
 let content = '';
 let isFootnotes = false;
+let isCaptionEnabled = false;
 let platform = 'gzh';
 let leftReady = false;
 let rightReady = false;
@@ -206,6 +207,37 @@ async function load() {
                 }
             }
 
+            // 加载图例状态
+            const captionEnabled = localStorage.getItem('captionEnabled');
+            console.log('🔍 [DEBUG] 初始化 - localStorage中的captionEnabled:', captionEnabled);
+            if (captionEnabled === 'true') {
+                isCaptionEnabled = true;
+                console.log('🔍 [DEBUG] 初始化 - 设置isCaptionEnabled为true（但图例实际关闭）');
+                // 延迟设置按钮状态，确保DOM已完全加载
+                setTimeout(() => {
+                    const captionButtons = document.querySelectorAll('button[onclick*="onCaptionChange"]');
+                    console.log('🔍 [DEBUG] 初始化 - 找到的图例按钮数量:', captionButtons.length);
+                    if (captionButtons.length > 0) {
+                        const button = captionButtons[0];
+                        console.log('🔍 [DEBUG] 初始化 - isCaptionEnabled=true，设置按钮为默认状态');
+                        button.style.backgroundColor = '';
+                        button.style.color = '';
+                    }
+                }, 100);
+            } else {
+                console.log('🔍 [DEBUG] 初始化 - isCaptionEnabled保持默认值false（图例实际开启）');
+                // 需要为false状态也设置按钮样式
+                setTimeout(() => {
+                    const captionButtons = document.querySelectorAll('button[onclick*="onCaptionChange"]');
+                    if (captionButtons.length > 0) {
+                        const button = captionButtons[0];
+                        console.log('🔍 [DEBUG] 初始化 - isCaptionEnabled=false，设置按钮为激活状态（蓝底白字）');
+                        button.style.backgroundColor = '#007AFF';
+                        button.style.color = 'white';
+                    }
+                }, 100);
+            }
+
             // 更新预览
             onUpdate();
 
@@ -228,7 +260,8 @@ async function onUpdate() {
             content: content,
             highlightCss: highlightCss,  // 确保这里传递了高亮样式
             previewMode: previewMode,
-            themeValue: customThemeContent
+            themeValue: customThemeContent,
+            isCaptionEnabled: isCaptionEnabled
         };
         iframe.contentWindow.postMessage(message, '*');
     }
@@ -239,7 +272,8 @@ async function onContentChange() {
     if (iframe) {
         const message = {
             type: 'onContentChange',
-            content: content
+            content: content,
+            isCaptionEnabled: isCaptionEnabled
         };
         iframe.contentWindow.postMessage(message, '*');
     }
@@ -280,6 +314,23 @@ async function onFootnoteChange(button) {
         useElement.setAttribute('href', '#footnoteIcon');
         onContentChange();
     }
+}
+
+async function onCaptionChange(button) {
+    console.log('🔍 [DEBUG] onCaptionChange 调用前 - isCaptionEnabled:', isCaptionEnabled);
+    isCaptionEnabled = !isCaptionEnabled;
+    console.log('🔍 [DEBUG] onCaptionChange 调用后 - isCaptionEnabled:', isCaptionEnabled);
+    localStorage.setItem('captionEnabled', isCaptionEnabled);
+    if (isCaptionEnabled) {
+        console.log('🔍 [DEBUG] isCaptionEnabled=true，但图例实际关闭 - 设置按钮为默认状态');
+        button.style.backgroundColor = '';
+        button.style.color = '';
+    } else {
+        console.log('🔍 [DEBUG] isCaptionEnabled=false，但图例实际开启 - 设置按钮为激活状态（蓝底白字）');
+        button.style.backgroundColor = '#007AFF';
+        button.style.color = 'white';
+    }
+    onContentChange();
 }
 
 async function changePlatform(selectedPlatform) {
@@ -577,6 +628,8 @@ async function loadCustomThemes() {
             span1.innerHTML = i.name;
             const span2 = document.createElement('span');
             span2.innerHTML = i.author;
+            li.style.display = 'flex';
+            li.style.alignItems = 'center';
             li.appendChild(span1);
             li.appendChild(span2);
             ul.appendChild(li);
@@ -619,13 +672,15 @@ async function loadCustomThemes() {
         }
 
         // 添加"创建新主题"按钮（如果自定义主题数量小于3）
-        if (customThemes && customThemes.length < 3) {
+        if (customThemes && customThemes.length < 10) {
             const li = document.createElement('li');
             li.setAttribute('id', 'create-theme');
             li.classList.add('border-li');
             const span1 = document.createElement('span');
             span1.innerHTML = '创建新主题';
             const span2 = document.createElement('span');
+            span2.style.display = 'flex';
+            span2.style.alignItems = 'center';
             span2.innerHTML = `<svg width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg"><use href="#plusIcon"></use></svg>`;
             span2.addEventListener('click', async () => {
                 // 获取当前选中的主题内容作为新主题的初始内容
@@ -883,7 +938,7 @@ function hideBubble() {
 function calcHeight(customThemeCount) {
     // 基础高度 + 内置主题高度 + 两个分隔线高度 + 代码高亮主题高度 + 自定义主题高度
     const separatorHeight = customThemeCount > 0 ? 60 : 30; // 如果有自定义主题则是两个分隔符的高度，否则一个
-    return 240 + (Math.min(customThemeCount, 2) * 25) + separatorHeight + (highlightThemes.length * 25);
+    return 240 + (Math.min(customThemeCount, 10) * 25) + separatorHeight + (highlightThemes.length * 25);
 }
 
 async function changeHighlightTheme(theme) {
