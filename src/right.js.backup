@@ -96,72 +96,14 @@ function setStylesheet(id, href) {
     style.setAttribute("href", href);
     document.head.appendChild(style);
 }
-// 错误处理包装器
-const ErrorHandler = {
-    // 安全执行函数
-    safeExecute(fn, errorMessage = "操作失败", defaultValue = null) {
-        try {
-            return fn();
-        } catch (error) {
-            console.error(`${errorMessage}:`, error);
-            return defaultValue;
-        }
-    },
-
-    // 安全的DOM操作
-    safeDOMOperation(selector, operation, errorMessage = "DOM操作失败") {
-        return this.safeExecute(() => {
-            const element = typeof selector === 'string' ? document.querySelector(selector) : selector;
-            if (!element) {
-                throw new Error(`元素未找到: ${selector}`);
-            }
-            return operation(element);
-        }, errorMessage);
-    }
-};
-
 function setContent(content) {
-    ErrorHandler.safeExecute(() => {
-        document.getElementById("wenyan")?.remove();
-
-        const container = document.createElement("section");
-        const parsedContent = ErrorHandler.safeExecute(
-            () => marked.parse(content),
-            "Markdown解析失败",
-            "<p>内容解析失败</p>"
-        );
-
-        container.innerHTML = parsedContent;
-        container.setAttribute("id", "wenyan");
-        container.setAttribute("class", "preview");
-        document.body.appendChild(container);
-
-        // 安全执行MathJax渲染
-        ErrorHandler.safeExecute(
-            () => MathJax.typeset(),
-            "MathJax渲染失败"
-        );
-    }, "设置内容失败");
-}
-
-/**
- * 重新渲染内容并保持字体设置
- * 专门用于图例开关等需要重新渲染但不影响字体的场景
- */
-function refreshContentWithFont(content) {
-    // 保存当前字体设置
-    const currentFont = FontManager.getCurrentFont();
-    const fontFamily = FontManager.getFontFamily(currentFont);
-
-    // 重新渲染内容
-    setContent(content);
-
-    // 重新应用字体设置
-    if (fontFamily) {
-        setTimeout(() => {
-            FontManager.applyToPreview(fontFamily);
-        }, 10); // 短暂延迟确保DOM已更新
-    }
+    document.getElementById("wenyan")?.remove();
+    const container = document.createElement("section");
+    container.innerHTML = marked.parse(content);
+    container.setAttribute("id", "wenyan");
+    container.setAttribute("class", "preview");
+    document.body.appendChild(container);
+    MathJax.typeset();
 }
 function setPreviewMode(mode) {
     document.getElementById("style")?.remove();
@@ -292,7 +234,7 @@ function processMathEquations(clonedWenyan) {
 function processInlineCode(clonedWenyan) {
     const elements = clonedWenyan.querySelectorAll("code:not(pre code)");
     elements.forEach(code => {
-        code.style.fontFamily = FontManager.getCodeFont();
+        code.style.fontFamily = "'JetBrains Mono', Menlo, Consolas, Monaco, monospace";
         code.style.fontSize = '14px';
         code.style.lineHeight = '1.5';
 
@@ -339,7 +281,7 @@ function processCodeBlocks(clonedWenyan, highlightCss) {
     const elements = clonedWenyan.querySelectorAll("pre");
     elements.forEach(pre => {
         // 设置 pre 元素的样式
-        pre.style.fontFamily = FontManager.getCodeFont();
+        pre.style.fontFamily = "'JetBrains Mono', Menlo, Consolas, Monaco, monospace";
         pre.style.fontSize = '14px';
         pre.style.lineHeight = '1.5';
         pre.style.padding = '16px 20px';
@@ -363,7 +305,7 @@ function processCodeBlocks(clonedWenyan, highlightCss) {
         // 设置 code 元素的样式
         const code = pre.querySelector('code');
         if (code) {
-            code.style.fontFamily = FontManager.getCodeFont();
+            code.style.fontFamily = "'JetBrains Mono', Menlo, Consolas, Monaco, monospace";
             code.style.fontSize = '14px';
             code.style.lineHeight = '1.5';
             code.style.display = 'block';
@@ -458,78 +400,20 @@ function processTaskLists(clonedWenyan) {
     });
 }
 
-// 统一的字体处理系统
-const FontManager = {
-    // 字体配置
-    FONTS: {
-        serif: '"Noto Serif CJK SC", "Noto Serif SC", "Source Han Serif SC", "Source Han Serif", serif',
-        sans: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-        code: "'JetBrains Mono', Menlo, Consolas, Monaco, monospace"
-    },
-
-    // 获取当前字体设置
-    getCurrentFont() {
-        return localStorage.getItem('preferred-font') || 'theme';
-    },
-
-    // 解析字体族名称
-    getFontFamily(fontType = 'theme') {
-        switch (fontType) {
-            case 'serif':
-                return this.FONTS.serif;
-            case 'sans':
-                return this.FONTS.sans;
-            case 'theme':
-            default:
-                return null; // 使用主题默认字体
-        }
-    },
-
-    // 应用字体到DOM元素
-    applyFontToElement(element, fontFamily) {
-        if (fontFamily) {
-            element.style.setProperty('font-family', fontFamily, 'important');
-        } else {
-            element.style.removeProperty('font-family');
-        }
-    },
-
-    // 应用字体到克隆的内容（用于内容生成）
-    applyToContent(clonedWenyan) {
-        const preferredFont = this.getCurrentFont();
-        const fontFamily = this.getFontFamily(preferredFont);
-
-        if (fontFamily) {
-            // 应用到所有文本元素，但排除代码块
-            const textElements = clonedWenyan.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th, span:not(pre *)');
-            textElements.forEach(element => {
-                this.applyFontToElement(element, fontFamily);
-            });
-            // 设置根元素的字体
-            this.applyFontToElement(clonedWenyan, fontFamily);
-        }
-    },
-
-    // 应用字体到预览（用于实时预览）
-    applyToPreview() {
-        const preferredFont = this.getCurrentFont();
-        const fontFamily = this.getFontFamily(preferredFont);
-        const wenyan = document.getElementById('wenyan');
-
-        if (wenyan) {
-            this.applyFontToElement(wenyan, fontFamily);
-        }
-    },
-
-    // 获取代码字体
-    getCodeFont() {
-        return this.FONTS.code;
-    }
-};
-
-// 辅助函数：应用字体设置（重构后使用FontManager）
+// 辅助函数：应用字体设置
 function applyFontSettings(clonedWenyan) {
-    FontManager.applyToContent(clonedWenyan);
+    const preferredFont = localStorage.getItem('preferred-font') || 'theme';
+    if (preferredFont !== 'theme') {
+        const fontFamily = preferredFont === 'serif'
+            ? '"Noto Serif CJK SC", "Noto Serif SC", "Source Han Serif SC", "Source Han Serif", serif'
+            : '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+
+        const textElements = clonedWenyan.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th, span:not(pre *)');
+        textElements.forEach(element => {
+            element.style.setProperty('font-family', fontFamily, 'important');
+        });
+        clonedWenyan.style.setProperty('font-family', fontFamily, 'important');
+    }
 }
 
 function getContentForGzh() {
@@ -550,7 +434,240 @@ function getContentForGzh() {
     clonedWenyan.setAttribute("data-provider", "WenYan");
     return `${clonedWenyan.outerHTML.replace(/class="mjx-solid"/g, 'fill="none" stroke-width="70"')}`;
 }
-  function extractDeclarations(ruleNode, resultMap) {
+
+    csstree.walk(ast, {
+        visit: 'Rule',
+        enter(node, item, list) {
+            const selectorList = node.prelude.children;
+            selectorList.forEach((selectorNode) => {
+                const selector = csstree.generate(selectorNode);
+                // console.log(selector);
+                
+                const declarations = node.block.children.toArray();
+                if (selector === "#wenyan") {
+                    declarations.forEach((decl) => {
+                        const value = csstree.generate(decl.value);
+                        clonedWenyan.style[decl.property] = value;
+                    });
+                } else {
+                    const elements = clonedWenyan.querySelectorAll(selector);
+                    elements.forEach((element) => {
+                        declarations.forEach((decl) => {
+                            const value = csstree.generate(decl.value);
+                            element.style[decl.property] = value;
+                        });
+                    });
+                }
+            });
+        }
+    });
+    
+    // 处理公式
+    let elements = clonedWenyan.querySelectorAll("mjx-container");
+    elements.forEach(element => {
+        const svg = element.querySelector('svg');
+        svg.style.width = svg.getAttribute("width");
+        svg.style.height = svg.getAttribute("height");
+        svg.removeAttribute("width");
+        svg.removeAttribute("height");
+        const parent = element.parentElement;
+        element.remove();
+        parent.appendChild(svg);
+        if (parent.classList.contains('block-equation')) {
+            parent.setAttribute("style", "text-align: center; margin-bottom: 1rem;");
+        }
+    });
+    // 处理行内代码
+    elements = clonedWenyan.querySelectorAll("code:not(pre code)");
+    elements.forEach(code => {
+        code.style.fontFamily = "'JetBrains Mono', Menlo, Consolas, Monaco, monospace";
+        code.style.fontSize = '14px';
+        code.style.lineHeight = '1.5';
+        
+        // 处理行内空格
+        code.innerHTML = code.innerHTML.replace(/ {2,}/g, (match) => {
+            return '\u2003'.repeat(match.length);
+        });
+        
+        // 如果是列表项中的行内代码，特殊处理
+        if (code.parentElement.tagName === 'LI') {
+            // 获取所有兄弟节点并包装在一个 span 中
+            const wrapper = document.createElement('span');
+            wrapper.style.display = 'inline';  // 确保是内联显示
+            let node = code.nextSibling;
+            while (node) {
+                const next = node.nextSibling;
+                wrapper.appendChild(node);
+                node = next;
+            }
+            code.insertAdjacentElement('afterend', wrapper);  // 插入到 code 元素后面
+        }
+    });
+    // 类似地处理加粗文本
+    elements = clonedWenyan.querySelectorAll("strong");
+    elements.forEach(strong => {
+        if (strong.parentElement.tagName === 'LI') {
+            const wrapper = document.createElement('span');
+            wrapper.style.display = 'inline';  // 确保是内联显示
+            let node = strong.nextSibling;
+            while (node) {
+                const next = node.nextSibling;
+                wrapper.appendChild(node);
+                node = next;
+            }
+            strong.insertAdjacentElement('afterend', wrapper);  // 插入到 strong 元素后面
+        }
+    });
+    // 处理代码块
+    elements = clonedWenyan.querySelectorAll("pre");
+    elements.forEach(pre => {
+        // 设置 pre 元素的样式
+        pre.style.fontFamily = "'JetBrains Mono', Menlo, Consolas, Monaco, monospace";
+        pre.style.fontSize = '14px';
+        pre.style.lineHeight = '1.5';
+        pre.style.padding = '16px 20px';
+        pre.style.margin = '16px 0';
+        pre.style.borderRadius = '4px';
+        pre.style.border = 'none';
+        pre.style.boxShadow = 'none';
+        
+        // 根据主题设置背景色
+        const isDarkTheme = highlightCss.includes('background:#1e1e1e') || 
+                           highlightCss.includes('background:#282c34') || 
+                           highlightCss.includes('background:#272822');
+        
+        if (isDarkTheme) {
+            // 使用主题自带的背景色
+            const bgColor = highlightCss.match(/\.hljs\{[^}]*background:(#[a-f0-9]+)[^}]*\}/i);
+            if (bgColor) {
+                pre.style.backgroundColor = bgColor[1];
+            } else {
+                pre.style.backgroundColor = '#1e1e1e';
+            }
+        } else {
+            pre.style.backgroundColor = '#f8f9fa';
+        }
+        
+        // 设置 code 元素的样式
+        const code = pre.querySelector('code');
+        if (code) {
+            code.style.fontFamily = "'JetBrains Mono', Menlo, Consolas, Monaco, monospace";
+            code.style.fontSize = '14px';
+            code.style.lineHeight = '1.5';
+            code.style.display = 'block';
+            code.style.backgroundColor = 'transparent';
+            code.style.border = 'none';
+            code.style.padding = '0';
+            
+            // 处理换行和缩进
+            const lines = code.innerHTML.split('\n');
+            const processedLines = lines.map(line => {
+                // 处理缩进和行内空格
+                return line.replace(/^( +)/g, (match) => {
+                    // 每个缩进空格转换为一个特殊空格字符
+                    return '\u2003'.repeat(match.length);
+                }).replace(/ {2,}/g, (match) => {
+                    // 行内连续空格转换为特殊空格字符
+                    return '\u2003'.repeat(match.length);
+                });
+            });
+            
+            code.innerHTML = processedLines.join('<br>');
+        }
+    });
+    
+    // 处理图片说明样式（确保复制到微信公众号时样式正确）
+    // 由于改用了 p 标签，我们需要通过其他方式识别图例
+    // 查找图片后的span标签（图例结构：img + span）
+    const images = clonedWenyan.querySelectorAll('img');
+    images.forEach(img => {
+        // 检查图片后是否直接跟着span标签
+        const nextSpan = img.nextElementSibling;
+        if (nextSpan && nextSpan.tagName === 'SPAN' && nextSpan.textContent === img.alt) {
+            // 这是一个图例span，应用样式
+            nextSpan.style.setProperty('display', 'block', 'important');
+            nextSpan.style.setProperty('text-align', 'center', 'important');
+            nextSpan.style.setProperty('font-size', '14px', 'important');
+            nextSpan.style.setProperty('color', '#666666', 'important');
+            nextSpan.style.setProperty('margin', '2px 0 8px 0', 'important');
+            nextSpan.style.setProperty('line-height', '1.5', 'important');
+            nextSpan.style.setProperty('font-style', 'normal', 'important');
+            nextSpan.style.setProperty('font-weight', 'normal', 'important');
+        }
+    });
+    // 公众号不支持css伪元素，将伪元素样式提取出来拼接成一个span
+    elements = clonedWenyan.querySelectorAll('h1, h2, h3, h4, h5, h6, blockquote');
+    elements.forEach(element => {
+        const afterResults = new Map();
+        const beforeResults = new Map();
+        csstree.walk(ast, {
+            visit: 'Rule',
+            enter(node) {
+                const selector = csstree.generate(node.prelude); // 生成选择器字符串
+                const tagName = element.tagName.toLowerCase();
+
+                // 检查是否匹配 ::after 或 ::before
+                if (selector.includes(`${tagName}::after`)) {
+                    extractDeclarations(node, afterResults);
+                } else if (selector.includes(`${tagName}::before`)) {
+                    extractDeclarations(node, beforeResults);
+                }
+            }
+        });
+        if (afterResults.size > 0) {
+            element.appendChild(buildPseudoSpan(afterResults));
+        }
+        if (beforeResults.size > 0) {
+            element.insertBefore(buildPseudoSpan(beforeResults), element.firstChild);
+        }
+    });
+    // 处理任务列表
+    elements = clonedWenyan.querySelectorAll('li input[type="checkbox"]');
+    elements.forEach(checkbox => {
+        // 创建一个 span 来模拟复选框
+        const checkboxSpan = document.createElement('span');
+        // 使用特殊字符：☐(空白框) 或 ☑(选中框)
+        checkboxSpan.innerHTML = checkbox.checked ? '☑' : '☐';
+        checkboxSpan.style.marginRight = '0.5em';
+        checkboxSpan.style.verticalAlign = 'middle';
+        checkboxSpan.style.fontSize = '16px';
+        
+        // 替换原有复选框
+        checkbox.parentNode.replaceChild(checkboxSpan, checkbox);
+        
+        // 获取所有兄弟节点并包装在一个 section 中
+        const wrapper = document.createElement('section');
+        wrapper.style.display = 'inline';
+        wrapper.style.verticalAlign = 'middle';
+        
+        let node = checkboxSpan.nextSibling;
+        while (node) {
+            const next = node.nextSibling;
+            wrapper.appendChild(node);
+            node = next;
+        }
+        checkboxSpan.insertAdjacentElement('afterend', wrapper);
+    });
+    // 添加字体处理
+    const preferredFont = localStorage.getItem('preferred-font') || 'theme';
+    if (preferredFont !== 'theme') {
+        // 直接使用存储的字体值，不依赖 fontFamilies
+        const fontFamily = preferredFont === 'serif' 
+            ? '"Noto Serif CJK SC", "Noto Serif SC", "Source Han Serif SC", "Source Han Serif", serif'
+            : '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+        // 应用字体样式到所有文本元素，但排除代码块
+        const textElements = clonedWenyan.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th, span:not(pre *)');
+        textElements.forEach(element => {
+            element.style.setProperty('font-family', fontFamily, 'important');
+        });
+        // 设置根元素的字体，作为默认值
+        clonedWenyan.style.setProperty('font-family', fontFamily, 'important');
+    }
+    // 直接返回结果，移除列表项的额外处理
+    clonedWenyan.setAttribute("data-provider", "WenYan");
+    return `${clonedWenyan.outerHTML.replace(/class="mjx-solid"/g, 'fill="none" stroke-width="70"')}`;
+}
+function extractDeclarations(ruleNode, resultMap) {
     csstree.walk(ruleNode.block, {
         visit: 'Declaration',
         enter(declNode) {
@@ -675,44 +792,6 @@ function addFootnotes(listStyle) {
         }
     }
 }
-
-/**
- * 移除脚注功能
- * 移除所有脚注标记和脚注列表，恢复原始链接样式
- */
-function removeFootnotes() {
-    // 移除脚注列表
-    const footnotesContainer = document.querySelector('#footnotes');
-    if (footnotesContainer) {
-        footnotesContainer.remove();
-    }
-
-    // 移除脚注相关的标题（如果有）
-    const footnoteHeaders = document.querySelectorAll('h3');
-    footnoteHeaders.forEach(header => {
-        if (header.textContent === '引用链接') {
-            header.remove();
-        }
-    });
-
-    // 恢复原始链接样式
-    const styledLinks = document.querySelectorAll('strong > a');
-    styledLinks.forEach(styledLink => {
-        const strongParent = styledLink.parentElement;
-        if (strongParent && strongParent.tagName === 'STRONG') {
-            // 创建新的链接元素，保持原始属性但移除加粗样式
-            const newLink = styledLink.cloneNode(true);
-            strongParent.parentNode.replaceChild(newLink, strongParent);
-        }
-    });
-
-    // 移除脚注标记
-    const footnoteMarkers = document.querySelectorAll('sup.footnote');
-    footnoteMarkers.forEach(marker => {
-        marker.remove();
-    });
-}
-
 function tableToAsciiArt(table) {
     const rows = Array.from(table.querySelectorAll('tr')).map(tr =>
         Array.from(tr.querySelectorAll('th, td')).map(td => td.innerText.trim())
@@ -758,120 +837,64 @@ function transformUl(ulElement) {
     ulElement.outerHTML = replaceString;
 }
 
-// 优化的CSS变量解析器
-const CSSVariableProcessor = {
-    // 优化的正则表达式
-    PATTERNS: {
-        // 匹配CSS变量定义：--variable-name: value;
-        VARIABLE_DEF: /--([a-zA-Z0-9\-]+)\s*:\s*([^;]+);/g,
-        // 匹配var()引用：var(--variable-name)
-        VARIABLE_USAGE: /var\(--([a-zA-Z0-9\-]+)\)/g,
-        // 匹配:root规则
-        ROOT_RULE: /:root\s*\{[^}]*\}/g
-    },
-
-    // 解析CSS变量
-    parse(css) {
-        try {
-            const variables = this.extractVariables(css);
-            const resolvedVariables = this.resolveVariables(variables);
-            return this.replaceInCSS(css, resolvedVariables);
-        } catch (error) {
-            console.error('CSS变量解析错误:', error);
-            return css; // 出错时返回原始CSS
-        }
-    },
-
-    // 提取变量定义
-    extractVariables(css) {
-        const variables = {};
-        let match;
-
-        while ((match = this.PATTERNS.VARIABLE_DEF.exec(css)) !== null) {
-            const varName = match[1];
-            let varValue = match[2].trim();
-
-            // 清理值：移除多余空白和换行
-            varValue = varValue.replace(/\s+/g, ' ').trim();
-
-            // 验证变量名
-            if (this.isValidVariableName(varName)) {
-                variables[varName] = varValue;
-            }
-        }
-
-        return variables;
-    },
-
-    // 递归解析变量引用
-    resolveVariables(variables, visited = new Set()) {
-        const resolved = {};
-
-        for (const [varName, varValue] of Object.entries(variables)) {
-            try {
-                resolved[varName] = this.resolveValue(varValue, variables, visited);
-            } catch (error) {
-                console.warn(`解析变量 ${varName} 时出错:`, error);
-                resolved[varName] = varValue; // 出错时使用原始值
-            }
-        }
-
-        return resolved;
-    },
-
-    // 解析单个值
-    resolveValue(value, variables, visited, path = new Set()) {
-        // 检查循环引用
-        if (path.has(value)) {
-            throw new Error('检测到循环引用');
-        }
-        path.add(value);
-
-        let resolvedValue = value;
-        let match;
-
-        // 使用replace的回调函数来避免正则表达式状态问题
-        resolvedValue = resolvedValue.replace(this.PATTERNS.VARIABLE_USAGE, (match, varName) => {
-            if (variables.hasOwnProperty(varName)) {
-                // 递归解析引用的变量
-                return this.resolveValue(variables[varName], variables, visited, new Set(path));
-            }
-            // 如果变量不存在，保持原样
-            return match;
-        });
-
-        return resolvedValue;
-    },
-
-    // 在CSS中替换变量引用
-    replaceInCSS(css, resolvedVariables) {
-        let result = css;
-
-        // 首先替换所有var()引用
-        result = result.replace(this.PATTERNS.VARIABLE_USAGE, (match, varName) => {
-            return resolvedVariables[varName] || match; // 如果变量不存在，保持原样
-        });
-
-        // 移除:root规则
-        result = result.replace(this.PATTERNS.ROOT_RULE, '');
-
-        return result;
-    },
-
-    // 验证变量名
-    isValidVariableName(name) {
-        return /^[a-zA-Z_][a-zA-Z0-9_-]*$/.test(name);
-    },
-
-    // 清理函数：移除已解析的变量缓存
-    clear() {
-        // 如果有缓存，在这里清理
-    }
-};
-
-// 兼容性别名（保持向后兼容）
 function replaceCSSVariables(css) {
-    return CSSVariableProcessor.parse(css);
+    // 正则表达式用于匹配变量定义，例如 --sans-serif-font: ...
+    const variablePattern = /--([a-zA-Z0-9\-]+):\s*([^;()]*\((?:[^()]*|\([^()]*\))*\)[^;()]*|[^;]+);/g;
+    // 正则表达式用于匹配使用 var() 的地方
+    const varPattern = /var\(--([a-zA-Z0-9\-]+)\)/g;
+
+    const cssVariables = {};
+
+    // 1. 提取变量定义并存入字典
+    let match;
+    while ((match = variablePattern.exec(css)) !== null) {
+        const variableName = match[1];
+        const variableValue = match[2].trim().replaceAll("\n", "");
+
+        // 将变量存入字典
+        cssVariables[variableName] = variableValue;
+    }
+
+    // 2. 递归解析 var() 引用为字典中对应的值
+    function resolveVariable(value, variables, resolved = new Set()) {
+        // 如果已经解析过这个值，则返回原始值以避免死循环
+        if (resolved.has(value)) return value;
+
+        resolved.add(value);
+        let resolvedValue = value;
+
+        // 解析变量
+        let match;
+        while ((match = varPattern.exec(resolvedValue)) !== null) {
+            const varName = match[1];
+
+            // 查找对应的变量值，如果变量引用另一个变量，递归解析
+            if (variables[varName]) {
+                const resolvedVar = resolveVariable(variables[varName], variables, resolved);
+                resolvedValue = resolvedValue.replace(match[0], resolvedVar);
+            }
+        }
+        return resolvedValue;
+    }
+
+    // 3. 替换所有变量引用
+    for (const key in cssVariables) {
+        const resolvedValue = resolveVariable(cssVariables[key], cssVariables);
+        cssVariables[key] = resolvedValue;
+    }
+
+    // 4. 替换 CSS 中的 var() 引用
+    let modifiedCSS = css;
+    while ((match = varPattern.exec(css)) !== null) {
+        const varName = match[1];
+
+        // 查找对应的变量值
+        if (cssVariables[varName]) {
+            modifiedCSS = modifiedCSS.replace(match[0], cssVariables[varName]);
+        }
+    }
+
+    return modifiedCSS.replace(/:root\s*\{[^}]*\}/g, '');
 }
 
 function buildPseudoSpan(beforeRresults) {
@@ -919,253 +942,59 @@ function removeComments(input) {
 }
 
 //// 非通用方法
-// 事件处理系统
-const EventHandler = {
-    // 事件处理器映射
-    handlers: {
-        'onUpdate': function(data) {
-            if (data.content) setContent(data.content);
-            if (data.highlightCss) setHighlight(data.highlightCss);
-            if (data.previewMode) setPreviewMode(data.previewMode);
-            if (data.themeValue) setCustomTheme(`${data.themeValue}`);
-            if (data.hasOwnProperty('isCaptionEnabled')) {
-                isCaptionEnabled = data.isCaptionEnabled;
+window.addEventListener('message', (event) => {
+    if (event.data) {
+        if (event.data.type === 'onUpdate') {
+            if (event.data.content) {
+                setContent(event.data.content);
             }
-
-            // 内容加载完成后，重新应用已保存的字体设置
-            setTimeout(() => {
-                const savedFont = localStorage.getItem('preferred-font');
-                if (savedFont && savedFont !== 'theme') {
-                    const fontFamily = FontManager.getFontFamily(savedFont);
-                    if (fontFamily) {
-                        FontManager.applyToPreview(fontFamily);
-                    }
-                }
-            }, 50); // 短暂延迟确保DOM更新完成
-        },
-        'onContentChange': function(data) {
-            setContent(data.content);
-            if (data.hasOwnProperty('isCaptionEnabled')) {
-                isCaptionEnabled = data.isCaptionEnabled;
+            if (event.data.highlightCss) {
+                setHighlight(event.data.highlightCss);
             }
-
-            // 内容重新渲染完成后，重新应用已保存的字体设置
-            setTimeout(() => {
-                const savedFont = localStorage.getItem('preferred-font');
-                if (savedFont && savedFont !== 'theme') {
-                    const fontFamily = FontManager.getFontFamily(savedFont);
-                    if (fontFamily) {
-                        FontManager.applyToPreview(fontFamily);
-                    }
-                }
-            }, 50); // 短暂延迟确保DOM更新完成
-        },
-        'onPeviewModeChange': function(data) {
-            setPreviewMode(data.previewMode);
-        },
-        'onFootnoteChange': function(data) {
-            if (data.isFootnotesEnabled) {
-                addFootnotes();
+            if (event.data.previewMode) {
+                setPreviewMode(event.data.previewMode);
+            }
+            if (event.data.themeValue) {
+                setCustomTheme(`${event.data.themeValue}`);
+            }
+            if (event.data.hasOwnProperty('isCaptionEnabled')) {
+                isCaptionEnabled = event.data.isCaptionEnabled;
+            }
+        } else if (event.data.type === 'onContentChange') {
+            setContent(event.data.content);
+            if (event.data.hasOwnProperty('isCaptionEnabled')) {
+                isCaptionEnabled = event.data.isCaptionEnabled;
+            }
+        } else if (event.data.type === 'onPeviewModeChange') {
+            setPreviewMode(event.data.previewMode);
+        } else if (event.data.type === 'onFootnoteChange') {
+            addFootnotes();
+        } else if (event.data.type === 'updateFont') {
+            const fontFamily = event.data.fontFamily;
+            const wenyan = document.getElementById('wenyan');
+            if (fontFamily === null) {
+                wenyan.style.removeProperty('font-family');
             } else {
-                removeFootnotes();
-            }
-        },
-        'onCaptionChange': function(data) {
-            isCaptionEnabled = data.isCaptionEnabled;
-            // 重新渲染内容以应用图例状态变化，同时保持字体设置
-            if (data.content) {
-                refreshContentWithFont(data.content);
-            }
-        },
-        'updateFont': function(data) {
-            FontManager.applyToPreview();
-        }
-    },
-
-    // 初始化事件监听
-    init() {
-        this.messageHandler = this.handleMessage.bind(this);
-        window.addEventListener('message', this.messageHandler);
-    },
-
-    // 清理事件监听
-    destroy() {
-        if (this.messageHandler) {
-            window.removeEventListener('message', this.messageHandler);
-            this.messageHandler = null;
-        }
-    },
-
-    // 统一的消息处理入口
-    handleMessage(event) {
-        if (!event.data || !event.data.type) return;
-
-        const handler = this.handlers[event.data.type];
-        if (handler) {
-            try {
-                handler(event.data);
-            } catch (error) {
-                console.error(`Error handling event ${event.data.type}:`, error);
+                // 直接设置内联样式
+                wenyan.style.setProperty('font-family', fontFamily, 'important');
             }
         }
-    },
-
-    // 注册新的事件处理器
-    register(eventType, handler) {
-        this.handlers[eventType] = handler;
-    },
-
-    // 移除事件处理器
-    unregister(eventType) {
-        delete this.handlers[eventType];
     }
-};
-
-// 初始化事件处理器
-EventHandler.init();
-// 性能优化工具
-const PerformanceUtils = {
-    // 防抖函数
-    debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
+});
+window.onscroll = function () {
+    if (!isScrollingFromScript) {
+        const message = {
+            type: 'rightScroll',
+            value: { y0: window.scrollY / document.body.scrollHeight }
         };
-    },
-
-    // 节流函数
-    throttle(func, limit) {
-        let inThrottle;
-        return function() {
-            const args = arguments;
-            const context = this;
-            if (!inThrottle) {
-                func.apply(context, args);
-                inThrottle = true;
-                setTimeout(() => inThrottle = false, limit);
-            }
-        };
-    },
-
-    // 批量DOM操作
-    batchDOMUpdate(callback) {
-        const fragment = document.createDocumentFragment();
-        const result = callback(fragment);
-        if (result && result !== fragment) {
-            return result;
-        }
-        return fragment;
+        window.parent.postMessage(message, '*');
     }
 };
+window.addEventListener('click', function(event) {
+    window.parent.postMessage({ clicked: true }, '*');
+});
 
-// 滚动事件处理（优化性能）
-const ScrollHandler = {
-    init() {
-        this.handleScroll = PerformanceUtils.throttle(this.handleScroll.bind(this), 16); // ~60fps
-        window.addEventListener('scroll', this.handleScroll, { passive: true });
-    },
-
-    destroy() {
-        if (this.handleScroll) {
-            window.removeEventListener('scroll', this.handleScroll);
-            this.handleScroll = null;
-        }
-    },
-
-    handleScroll() {
-        if (!isScrollingFromScript) {
-            const scrollRatio = window.scrollY / document.body.scrollHeight;
-            const message = {
-                type: 'rightScroll',
-                value: { y0: scrollRatio }
-            };
-            window.parent.postMessage(message, '*');
-        }
-    }
-};
-
-// 点击事件处理
-const ClickHandler = {
-    init() {
-        this.handleClick = this.handleClick.bind(this);
-        window.addEventListener('click', this.handleClick);
-    },
-
-    destroy() {
-        if (this.handleClick) {
-            window.removeEventListener('click', this.handleClick);
-            this.handleClick = null;
-        }
-    },
-
-    handleClick(event) {
-        window.parent.postMessage({ clicked: true }, '*');
-    }
-};
-
-// 初始化所有事件处理器
-ScrollHandler.init();
-ClickHandler.init();
-
-// 应用清理函数
-function cleanupEventHandlers() {
-    EventHandler.destroy();
-    ScrollHandler.destroy();
-    ClickHandler.destroy();
-    CSSVariableProcessor.clear();
-}
-
-// 性能监控：可选的性能度量
-const PerformanceMonitor = {
-    marks: new Map(),
-
-    start(label) {
-        if (window.performance && performance.mark) {
-            performance.mark(`${label}_start`);
-        }
-    },
-
-    end(label) {
-        if (window.performance && performance.mark && performance.measure) {
-            performance.mark(`${label}_end`);
-            performance.measure(label, `${label}_start`, `${label}_end`);
-        }
-    },
-
-    getMeasures() {
-        if (window.performance && performance.getEntriesByType) {
-            return performance.getEntriesByType('measure');
-        }
-        return [];
-    }
-};
-
-// 初始化完成消息
 const message = {
     type: 'onRightReady'
 };
-
-ErrorHandler.safeExecute(() => {
-    window.parent.postMessage(message, '*');
-}, "发送就绪消息失败");
-
-// 如果页面卸载，清理事件处理器
-window.addEventListener('beforeunload', cleanupEventHandlers);
-
-// 导出调试工具（仅在开发环境）
-if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    window.WenYanDebug = {
-        ErrorHandler,
-        PerformanceUtils,
-        PerformanceMonitor,
-        CSSVariableProcessor,
-        FontManager,
-        EventHandler,
-        cleanupEventHandlers
-    };
-}
+window.parent.postMessage(message, '*');

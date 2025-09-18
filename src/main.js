@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-// import { resolveResource } from '@tauri-apps/api/path'
 const { resolveResource } = window.__TAURI__.path;
-// import { readTextFile } from '@tauri-apps/api/fs'
 const { readTextFile, writeBinaryFile } = window.__TAURI__.fs;
-// import { appWindow } from '@tauri-apps/api/window'
 const { appWindow } = window.__TAURI__.window;
 
 const { invoke } = window.__TAURI__.tauri;
@@ -78,8 +75,6 @@ const highlightThemes = [
     { id: 'monokai', name: 'Monokai' }
 ];
 
-// let greetInputEl;
-// let greetMsgEl;
 let selectedTheme = 'gzh_default';
 let highlightStyle = 'highlight/styles/github.min.css';
 let previewMode = 'style.css';
@@ -97,6 +92,42 @@ const fontFamilies = [
     { id: 'sans-serif', name: '无衬线', value: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' },
     { id: 'serif', name: '衬线', value: 'Optima, "Microsoft YaHei", PingFangSC-regular, serif' }
 ];
+
+/**
+ * Simple font selector setup using FontManager
+ * This function initializes the font selector system
+ */
+function addFontSelector() {
+    // Initialize FontManager if not already created
+    if (typeof FontManager === 'undefined') {
+        window.FontManager = {
+            getCurrentFont: () => localStorage.getItem('preferred-font') || 'theme',
+            getFontFamily: (fontId) => {
+                const font = fontFamilies.find(f => f.id === fontId);
+                return font ? font.value : null;
+            },
+            applyToContent: (fontFamily) => {
+                // Forward to existing updatePreviewFont function
+                updatePreviewFont(fontFamily);
+            },
+            applyToPreview: (fontFamily) => {
+                // Forward to existing updatePreviewFont function
+                updatePreviewFont(fontFamily);
+            }
+        };
+    }
+
+    // Initialize current font from localStorage
+    const currentFont = FontManager.getCurrentFont();
+    const fontFamily = FontManager.getFontFamily(currentFont);
+
+    // Apply current font to preview
+    if (fontFamily) {
+        updatePreviewFont(fontFamily);
+    }
+
+    console.log('Font selector initialized with:', currentFont);
+}
 
 window.addEventListener('message', async (event) => {
     if (event.data) {
@@ -207,36 +238,11 @@ async function load() {
                 }
             }
 
-            // 加载图例状态
-            const captionEnabled = localStorage.getItem('captionEnabled');
-            console.log('🔍 [DEBUG] 初始化 - localStorage中的captionEnabled:', captionEnabled);
-            if (captionEnabled === 'true') {
-                isCaptionEnabled = true;
-                console.log('🔍 [DEBUG] 初始化 - 设置isCaptionEnabled为true（但图例实际关闭）');
-                // 延迟设置按钮状态，确保DOM已完全加载
-                setTimeout(() => {
-                    const captionButtons = document.querySelectorAll('button[onclick*="onCaptionChange"]');
-                    console.log('🔍 [DEBUG] 初始化 - 找到的图例按钮数量:', captionButtons.length);
-                    if (captionButtons.length > 0) {
-                        const button = captionButtons[0];
-                        console.log('🔍 [DEBUG] 初始化 - isCaptionEnabled=true，设置按钮为默认状态');
-                        button.style.backgroundColor = '';
-                        button.style.color = '';
-                    }
-                }, 100);
-            } else {
-                console.log('🔍 [DEBUG] 初始化 - isCaptionEnabled保持默认值false（图例实际开启）');
-                // 需要为false状态也设置按钮样式
-                setTimeout(() => {
-                    const captionButtons = document.querySelectorAll('button[onclick*="onCaptionChange"]');
-                    if (captionButtons.length > 0) {
-                        const button = captionButtons[0];
-                        console.log('🔍 [DEBUG] 初始化 - isCaptionEnabled=false，设置按钮为激活状态（蓝底白字）');
-                        button.style.backgroundColor = '#007AFF';
-                        button.style.color = 'white';
-                    }
-                }, 100);
-            }
+            // 延迟同步图例和脚注按钮状态，确保DOM已完全加载
+            setTimeout(() => {
+                syncCaptionButtonState();
+                syncFootnoteButtonState();
+            }, 150);
 
             // 更新预览
             onUpdate();
@@ -301,36 +307,51 @@ async function onPeviewModeChange(button) {
 async function onFootnoteChange(button) {
     isFootnotes = !isFootnotes;
     const useElement = button.querySelector('use');
-    if (isFootnotes) {
-        useElement.setAttribute('href', '#footnoteIcon');
-        const iframe = document.getElementById('rightFrame');
-        if (iframe) {
-            const message = {
-                type: 'onFootnoteChange'
-            };
-            iframe.contentWindow.postMessage(message, '*');
-        }
-    } else {
-        useElement.setAttribute('href', '#footnoteIcon');
-        onContentChange();
+    useElement.setAttribute('href', '#footnoteIcon');
+
+    // 统一使用消息传递机制，避免重新渲染整个内容
+    const iframe = document.getElementById('rightFrame');
+    if (iframe) {
+        const message = {
+            type: 'onFootnoteChange',
+            isFootnotesEnabled: isFootnotes
+        };
+        iframe.contentWindow.postMessage(message, '*');
+
+        // 延迟同步脚注按钮状态，等待脚注添加/移除完成
+        setTimeout(() => {
+            syncFootnoteButtonState();
+        }, 100);
     }
 }
 
 async function onCaptionChange(button) {
-    console.log('🔍 [DEBUG] onCaptionChange 调用前 - isCaptionEnabled:', isCaptionEnabled);
+    // 先切换状态（用于显示用户点击的即时反馈）
     isCaptionEnabled = !isCaptionEnabled;
-    console.log('🔍 [DEBUG] onCaptionChange 调用后 - isCaptionEnabled:', isCaptionEnabled);
     localStorage.setItem('captionEnabled', isCaptionEnabled);
     if (isCaptionEnabled) {
-        console.log('🔍 [DEBUG] isCaptionEnabled=true，但图例实际关闭 - 设置按钮为默认状态');
-        button.style.backgroundColor = '';
-        button.style.color = '';
-    } else {
-        console.log('🔍 [DEBUG] isCaptionEnabled=false，但图例实际开启 - 设置按钮为激活状态（蓝底白字）');
         button.style.backgroundColor = '#007AFF';
         button.style.color = 'white';
+    } else {
+        button.style.backgroundColor = '';
+        button.style.color = '';
     }
-    onContentChange();
+
+    // 发送图例状态变化消息，包含当前内容以便重新渲染
+    const iframe = document.getElementById('rightFrame');
+    if (iframe) {
+        const message = {
+            type: 'onCaptionChange',
+            isCaptionEnabled: isCaptionEnabled,
+            content: content  // 发送当前内容
+        };
+        iframe.contentWindow.postMessage(message, '*');
+
+        // 延迟同步按钮状态，等待内容重新渲染完成
+        setTimeout(() => {
+            syncCaptionButtonState();
+        }, 200);
+    }
 }
 
 async function changePlatform(selectedPlatform) {
@@ -358,46 +379,105 @@ async function changePlatform(selectedPlatform) {
     changeTheme(selectedTheme);
 }
 
+/**
+ * 根据图例实际显示状态同步按钮颜色
+ * 检查预览区域中的图例显示情况，确保按钮颜色与实际状态一致
+ */
+function syncCaptionButtonState() {
+    const iframe = document.getElementById('rightFrame');
+    if (!iframe) return;
+
+    try {
+        // 检查预览区域是否有图例显示
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+        const images = iframeDoc.querySelectorAll('#wenyan img');
+
+        // 检查是否有图片显示图例
+        let hasVisibleCaptions = false;
+        images.forEach(img => {
+            // 检查图片后面是否有图例元素（通过内联样式判断）
+            const nextSibling = img.nextElementSibling;
+            if (nextSibling && nextSibling.tagName === 'SPAN') {
+                const style = nextSibling.getAttribute('style') || '';
+                if (style.includes('text-align: center') && style.includes('display: block')) {
+                    hasVisibleCaptions = true;
+                }
+            }
+        });
+
+        // 同步按钮状态
+        const captionButtons = document.querySelectorAll('button[onclick*="onCaptionChange"]');
+        if (captionButtons.length > 0) {
+            const button = captionButtons[0];
+            if (hasVisibleCaptions) {
+                // 有图例显示 → 按钮蓝色
+                button.style.backgroundColor = '#007AFF';
+                button.style.color = 'white';
+            } else {
+                // 无图例显示 → 按钮透明
+                button.style.backgroundColor = '';
+                button.style.color = '';
+            }
+        }
+
+        // 更新内部状态变量以保持一致性
+        isCaptionEnabled = hasVisibleCaptions;
+        localStorage.setItem('captionEnabled', hasVisibleCaptions);
+
+    } catch (error) {
+        console.warn('同步图例按钮状态失败:', error);
+    }
+}
+
+/**
+ * 根据脚注实际显示状态同步按钮颜色
+ * 检查预览区域中的脚注显示情况，确保按钮颜色与实际状态一致
+ */
+function syncFootnoteButtonState() {
+    const iframe = document.getElementById('rightFrame');
+    if (!iframe) return;
+
+    try {
+        // 检查预览区域是否有脚注显示
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+        // 检查是否有脚注标记或脚注列表
+        const hasFootnoteMarkers = iframeDoc.querySelectorAll('sup.footnote').length > 0;
+        const hasFootnoteList = iframeDoc.querySelector('#footnotes') !== null;
+        const hasFootnoteHeader = Array.from(iframeDoc.querySelectorAll('h3')).some(h3 => h3.textContent === '引用链接');
+
+        // 检查是否有脚注显示
+        let hasVisibleFootnotes = hasFootnoteMarkers || hasFootnoteList || hasFootnoteHeader;
+
+        // 同步按钮状态
+        const footnoteButtons = document.querySelectorAll('button[onclick*="onFootnoteChange"]');
+        if (footnoteButtons.length > 0) {
+            const button = footnoteButtons[0];
+            if (hasVisibleFootnotes) {
+                // 有脚注显示 → 按钮蓝色
+                button.style.backgroundColor = '#007AFF';
+                button.style.color = 'white';
+            } else {
+                // 无脚注显示 → 按钮透明
+                button.style.backgroundColor = '';
+                button.style.color = '';
+            }
+        }
+
+        // 更新内部状态变量以保持一致性
+        isFootnotes = hasVisibleFootnotes;
+
+    } catch (error) {
+        console.warn('同步脚注按钮状态失败:', error);
+    }
+}
+
 async function onCopy(button) {
     const iframe = document.getElementById('rightFrame');
     const iframeWindow = iframe.contentWindow;
     let htmlValue = '';
     if (platform === 'gzh') {
-        // 获取当前选择的字体
-        const currentFont = localStorage.getItem('preferred-font') || 'theme';
-        const selectedFont = fontFamilies.find(f => f.id === currentFont);
-        
-        // 获取原始内容
         htmlValue = iframeWindow.getContentForGzh();
-        
-        // 如果选择了特定字体，应用字体样式但保护代码块
-        if (selectedFont && selectedFont.value) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = htmlValue;
-            
-            // 保存代码块和行内代码的原始样式
-            const codeElements = tempDiv.querySelectorAll('pre, code');
-            const originalStyles = new Map();
-            codeElements.forEach(el => {
-                originalStyles.set(el, el.style.cssText);
-            });
-            
-            // 应用字体到所有元素
-            const elements = tempDiv.getElementsByTagName('*');
-            for (let i = 0; i < elements.length; i++) {
-                if (!elements[i].matches('pre, code')) {
-                    elements[i].style.setProperty('font-family', selectedFont.value, 'important');
-                }
-            }
-            
-            // 恢复代码块和行内代码的原始样式
-            codeElements.forEach(el => {
-                el.style.cssText = originalStyles.get(el);
-            });
-            
-            tempDiv.style.setProperty('font-family', selectedFont.value, 'important');
-            htmlValue = tempDiv.outerHTML;
-        }
     } else if (platform === 'zhihu') {
         htmlValue = iframeWindow.getContentWithMathImg();
     } else if (platform === 'juejin') {
@@ -499,7 +579,6 @@ async function exportLongImage() {
 
             // 替换 img.src
             img.src = `data:${mimeType};base64,${base64String}`;
-            // console.log(img.src);
         } catch (error) {
             console.error(`Failed to process image ${index}:`, error);
             await message(`${error}`, 'Error exporting image.');
@@ -541,7 +620,6 @@ async function exportLongImage() {
                         });
                         if (filePath) {
                             blob.arrayBuffer().then(async (arrayBuffer) => {
-                                // console.log(arrayBuffer); // ArrayBuffer 内容
                                 await writeBinaryFile(filePath, arrayBuffer);
                             });
                         }
@@ -987,9 +1065,6 @@ async function renameCustomTheme(id, newName) {
     });
 }
 
-function addFontSelector() {
-    // 不再需要这个函数，因为我们使用了 onclick 属性
-}
 
 function displayFontSelector(button) {
     // 先移除已存在的选择器

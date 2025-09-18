@@ -27,8 +27,7 @@ body {
     height: 100%;
     border: 1px solid;
     border-color: #d1d5db;
-    /* border-radius: 5px; */
-}
+  }
 
 .container {
     display: flex;
@@ -277,4 +276,29 @@ pre, pre code, code {
     font-family: 'JetBrains Mono', monospace !important;
     font-size: 14px;
     line-height: 1.5;
+}
+
+/* 图例相关样式 - 完全固定，不允许主题修改 */
+.image-caption {
+    display: block !important;
+    text-align: center !important;
+    font-size: 0.9em !important;
+    color: #666 !important;
+    margin-top: 8px !important;
+    margin-bottom: 16px !important;
+    font-style: normal !important;
+    line-height: 1.5 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: none !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    font-family: inherit !important;
+    font-weight: normal !important;
+    text-decoration: none !important;
+    letter-spacing: normal !important;
+    word-spacing: normal !important;
+    text-transform: none !important;
+    text-shadow: none !important;
+    opacity: 1 !important;
 }
