@@ -1,119 +1,144 @@
-基于原项目做了以下修改：
-
-## [2.4.5] - 2025-09-05
-
-### 改进
-- 增加自定义主题数量限制，从最多3个扩展到10个
-- 优化"创建新主题"按钮的加号图标垂直居中显示
-- 新增图例功能，增强用户体验
-
-## [2.4.4] - 2025-02-28
-
-### 修复
-- 修复脚注样式显示问题
-- 修复主题选择器在某些情况下的显示异常
-
-## [2.4.3] - 2025-02-18
-
-### 改进
-- 借鉴[墨滴](https://mdnice.com/)的字体设置，优化字体设置为衬线时的显示效果
-  - 不同的操作系统支持的字体不同，没有字体可以在所有系统都生效，
-  - 衬线字体只在安卓设备上生效
-  - Windows 系统下，字体设置为"微软雅黑"，iOS 系统下，字体设置为 Optima
-- 在"关于"窗口中添加了我的联系方式
-- 优化"关于"窗口的显示效果，调整窗口尺寸
-
-## [2.4.2] - 2025-02-14
-
-### 新增
-- 新增字体选择功能
-  - 支持在"跟随主题"、"衬线"和"无衬线"字体之间切换
-  - 字体设置会被保存并在重启后保持
-  - 字体选择按钮位于主题和预览按钮之间
-- 新增自定义主题重命名功能，双击自定义主题名称可重命名
-
-### 修复
-- 优化了字体切换时的用户体验
-- 确保字体设置不影响其他功能（如复制功能）的正常使用
-- 修复任务列表复选框后文本异常换行问题
-- 修复微信公众号保存时复选框丢失的问题，用☐、☑代替复选框
-
-### 改进
-- 优化自定义主题及代码高亮主题的排列顺序 
-
-## [2.4.1] - 2025-01-29
-
-### 新增
-- 支持多种代码高亮主题（GitHub、Visual Studio、Atom Dark/Light、Monokai）
-- 代码块使用 JetBrains Mono 字体
-- 代码块样式优化，支持深色/浅色主题
-
-### 修复
-- 修复列表项中行内代码和加粗文本的换行问题
-- 修复代码块缩进显示问题
-
-### 改进
-- 优化代码块在微信公众号中的显示效果
-- 改进字体渲染 
-
-以下是原项目的 README 内容。
-
----
-
 <div align="center">
-    <img alt = "logo" src="data/256-mac.png" />
+    <img alt="logo" src="data/256-mac.png" />
 </div>
 
-# 文颜
+# 文颜 (WenYan) - 增强版
 
-文颜`Windows`版，`Mac`版[请戳](https://github.com/caol64/wenyan)。
+> 基于 [caol64/wenyan-pc](https://github.com/caol64/wenyan-pc) 的 Windows 增强版本，专注于用户体验提升和功能扩展
 
-## 功能
+## 🌟 版本特色
 
-本项目的核心功能是将编辑好的`markdown`文章转换成适配各个发布平台的格式，通过一键复制，可以直接粘贴到平台的文本编辑器，无需再做额外调整。
+**当前版本：2.4.6**
 
-- 支持发布到多平台：
-  - 公众号
-  - 知乎
-  - 今日头条
-  - 掘金、CSDN等
-  - Medium
-- 支持代码高亮
-- 支持公式
-- 支持链接转脚注
-- 支持识别`front matter`语法
-- 集成多种主题样式模版
-  - [Orange Heart](https://github.com/evgo2017/typora-theme-orange-heart)
-  - [Rainbow](https://github.com/thezbm/typora-theme-rainbow)
-  - [Lapis](https://github.com/YiNNx/typora-theme-lapis)
-  - [Pie](https://github.com/kevinzhao2233/typora-theme-pie)
-  - [Maize](https://github.com/BEATREE/typora-maize-theme)
-  - [Purple](https://github.com/hliu202/typora-purple-theme)
-  - [物理猫-薄荷](https://github.com/sumruler/typora-theme-phycat)
-- 自定义主题
-  - 支持自定义样式
-  - 支持导入现成的主题
-  - [使用教程](https://babyno.top/posts/2024/11/wenyan-supports-customized-themes/)
-  - [功能讨论](https://github.com/caol64/wenyan/discussions/9)
-  - [主题分享](https://github.com/caol64/wenyan/discussions/13)
-- 支持导出长图
+本版本在原项目基础上进行了大量功能增强和用户体验优化，让 Markdown 写作和发布更加高效便捷。
 
-## 应用截图
+## 🆕 新增功能 (相比原版)
 
-![](data/1.jpg)
+### 1. 📸 图例功能 - v2.4.5
+- **智能图片说明**：自动将图片 alt 文本转换为图例，显示在图片下方
+- **一键切换**：支持开启/关闭图例显示，适应不同发布需求
+- **样式统一**：图例居中对齐，灰色文字，与整体风格协调
+- **状态同步**：按钮颜色实时反映功能开启状态
 
-## 更多功能介绍
+### 2. 🔤 字体选择系统 - v2.4.2
+- **三种字体模式**：
+  - 🎨 跟随主题：使用主题默认字体
+  - 📰 衬线字体：Optima / 微软雅黑组合，适合正式文档
+  - 💻 无衬线字体：现代系统字体，清晰易读
+- **持久化存储**：字体设置自动保存，重启后保持生效
+- **智能应用**：字体设置不影响代码块和其他特殊元素
+
+### 3. 🎨 主题系统增强
+- **自定义主题扩展**：从最多3个增加到**10个**自定义主题
+- **主题重命名**：双击主题名称即可重命名，管理更便捷
+- **代码高亮主题**：支持6种高亮主题
+  - GitHub (默认)
+  - Visual Studio / Visual Studio 2015
+  - Atom Dark / Atom Light
+  - Monokai
+- **专业代码字体**：使用 JetBrains Mono 字体，代码显示更专业
+
+### 4. 📝 内容处理优化
+- **任务列表改进**：修复复选框文本换行问题，微信公众号兼容性更好
+- **脚注功能增强**：优化脚注样式，添加视觉状态反馈
+- **跨平台字体适配**：不同操作系统下字体显示效果一致
+
+### 5. ⚡ 性能与架构优化
+- **模块化设计**：事件处理、错误处理、性能优化分离
+- **状态管理**：完善的状态同步机制，UI状态与功能状态一致
+- **内存优化**：防抖节流、批量DOM操作，提升响应速度
+- **错误处理**：安全的DOM操作，优雅降级确保稳定性
+
+## 📋 原版核心功能
+
+### 多平台发布支持
+- 📱 **微信公众号**：完美适配，支持自定义主题
+- 🤔 **知乎**：数学公式支持，专业的技术写作
+- ⛏️ **掘金**：专门的 Markdown 处理
+- 🌐 **Medium**：ASCII 表格转换
+- 📰 **今日头条**：基础格式化支持
+
+### 基础功能
+- ✅ **代码高亮**：多种语法高亮主题
+- 📐 **数学公式**：MathJax 支持，LaTeX 渲染
+- 🔗 **链接转脚注**：学术写作友好
+- 📄 **front matter 支持**：标准 Markdown 元数据
+- 🖼️ **图片导出**：支持生成长图片
+
+### 内置主题模板
+- [Orange Heart](https://github.com/evgo2017/typora-theme-orange-heart)
+- [Rainbow](https://github.com/thezbm/typora-theme-rainbow)
+- [Lapis](https://github.com/YiNNx/typora-theme-lapis)
+- [Pie](https://github.com/kevinzhao2233/typora-theme-pie)
+- [Maize](https://github.com/BEATREE/typora-maize-theme)
+- [Purple](https://github.com/hliu202/typora-purple-theme)
+- [物理猫-薄荷](https://github.com/sumruler/typora-theme-phycat)
+
+### 自定义主题
+- 支持自定义样式
+- 支持导入现成的主题
+- [使用教程](https://babyno.top/posts/2024/11/wenyan-supports-customized-themes/)
+- [功能讨论](https://github.com/caol64/wenyan/discussions/9)
+- [主题分享](https://github.com/caol64/wenyan/discussions/13)
+
+## 🚀 快速开始
+
+### 下载安装
+- **Windows 版本**：[ Releases ](https://github.com/volcanolin/wenyan-pc/releases)
+- **系统要求**：Windows 10/11
+
+### 使用方法
+1. **写作**：左侧编辑器编写 Markdown
+2. **预览**：右侧实时预览效果
+3. **发布**：选择目标平台，一键复制格式化内容
+4. **自定义**：调整主题、字体、图例等设置
+
+## 📷 应用截图
+
+![](data/2.4.6.png)
+
+## 🛠️ 技术架构
+
+- **前端**：原生 JavaScript / HTML / CSS
+- **后端**：Tauri (Rust)
+- **Markdown 解析**：Marked.js
+- **数学公式**：MathJax
+- **代码高亮**：highlight.js
+- **数据库**：SQLite (自定义主题存储)
+
+## 📈 版本演进
+
+- **v2.4.6** - 修复字体持久化，优化状态同步
+- **v2.4.5** - 新增图例功能，扩展自定义主题数量
+- **v2.4.4** - 脚注功能修复，主题选择器优化
+- **v2.4.3** - 跨平台字体适配，UI 改进
+- **v2.4.2** - 字体选择功能，任务列表优化
+- **v2.4.1** - 代码高亮主题扩展，渲染优化
+
+## 📖 更多功能
 
 [https://yuzhi.tech/docs/wenyan](https://yuzhi.tech/docs/wenyan)
 
-## 下载
+## 🤝 贡献
 
-[https://yuzhi.tech/docs/wenyan/download](https://yuzhi.tech/docs/wenyan/download)
+欢迎提交 Issue 和 Pull Request！
 
-## 支持
+## 💬 支持
 
-如果您觉得不错，可以给我家猫咪买点罐头吃。[喂猫❤️](https://yuzhi.tech/sponsor)
+如果您觉得不错，可以给原版作者家猫咪买点罐头吃。[喂猫❤️](https://yuzhi.tech/sponsor)
+如果您认可我的修改，也可以请我喝一杯咖啡~
+![](data/wx.png) ![](data/zfb.png)
 
-## License
+## 📄 许可证
 
 Apache License Version 2.0
+
+## 🙏 致谢
+
+- [原版项目](https://github.com/caol64/wenyan-pc) - 核心功能基础
+- [Tauri](https://tauri.app/) - 跨平台框架
+- 各主题作者 - 美观的界面设计
+
+---
+
+> 💡 **提示**：本版本专注于 Windows 平台的用户体验优化，相比原版增加了多项实用功能，特别适合需要频繁发布到多个平台的内容创作者。
