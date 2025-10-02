@@ -242,10 +242,10 @@ async function load() {
             setTimeout(() => {
                 syncCaptionButtonState();
                 syncFootnoteButtonState();
-            }, 150);
 
-            // 更新预览
-            onUpdate();
+                // 更新预览（确保在状态同步后再调用）
+                onUpdate();
+            }, 150);
 
         } catch (error) {
             console.error('Error reading file:', error);
@@ -267,7 +267,8 @@ async function onUpdate() {
             highlightCss: highlightCss,  // 确保这里传递了高亮样式
             previewMode: previewMode,
             themeValue: customThemeContent,
-            isCaptionEnabled: isCaptionEnabled
+            isCaptionEnabled: isCaptionEnabled,
+            isFootnotesEnabled: isFootnotes  // 🔥 新增：传递脚注状态
         };
         iframe.contentWindow.postMessage(message, '*');
     }
@@ -306,6 +307,17 @@ async function onPeviewModeChange(button) {
 
 async function onFootnoteChange(button) {
     isFootnotes = !isFootnotes;
+    localStorage.setItem('footnotesEnabled', isFootnotes); // 持久化脚注状态
+
+    // 🔥 新增：立即更新按钮颜色，提供即时反馈
+    if (isFootnotes) {
+        button.style.backgroundColor = '#007AFF';
+        button.style.color = 'white';
+    } else {
+        button.style.backgroundColor = '';
+        button.style.color = '';
+    }
+
     const useElement = button.querySelector('use');
     useElement.setAttribute('href', '#footnoteIcon');
 
@@ -317,11 +329,6 @@ async function onFootnoteChange(button) {
             isFootnotesEnabled: isFootnotes
         };
         iframe.contentWindow.postMessage(message, '*');
-
-        // 延迟同步脚注按钮状态，等待脚注添加/移除完成
-        setTimeout(() => {
-            syncFootnoteButtonState();
-        }, 100);
     }
 }
 
@@ -346,11 +353,6 @@ async function onCaptionChange(button) {
             content: content  // 发送当前内容
         };
         iframe.contentWindow.postMessage(message, '*');
-
-        // 延迟同步按钮状态，等待内容重新渲染完成
-        setTimeout(() => {
-            syncCaptionButtonState();
-        }, 200);
     }
 }
 
@@ -380,95 +382,94 @@ async function changePlatform(selectedPlatform) {
 }
 
 /**
- * 根据图例实际显示状态同步按钮颜色
- * 检查预览区域中的图例显示情况，确保按钮颜色与实际状态一致
+ * 根据保存的图例功能状态同步按钮颜色
+ * 直接从localStorage读取图例功能开关状态，确保按钮状态与功能状态一致
  */
 function syncCaptionButtonState() {
-    const iframe = document.getElementById('rightFrame');
-    if (!iframe) return;
-
     try {
-        // 检查预览区域是否有图例显示
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-        const images = iframeDoc.querySelectorAll('#wenyan img');
-
-        // 检查是否有图片显示图例
-        let hasVisibleCaptions = false;
-        images.forEach(img => {
-            // 检查图片后面是否有图例元素（通过内联样式判断）
-            const nextSibling = img.nextElementSibling;
-            if (nextSibling && nextSibling.tagName === 'SPAN') {
-                const style = nextSibling.getAttribute('style') || '';
-                if (style.includes('text-align: center') && style.includes('display: block')) {
-                    hasVisibleCaptions = true;
-                }
-            }
-        });
+        // 直接从localStorage读取图例功能状态
+        const savedState = localStorage.getItem('captionEnabled') === 'true';
 
         // 同步按钮状态
         const captionButtons = document.querySelectorAll('button[onclick*="onCaptionChange"]');
         if (captionButtons.length > 0) {
             const button = captionButtons[0];
-            if (hasVisibleCaptions) {
-                // 有图例显示 → 按钮蓝色
+            if (savedState) {
+                // 图例功能开启 → 按钮蓝色
                 button.style.backgroundColor = '#007AFF';
                 button.style.color = 'white';
             } else {
-                // 无图例显示 → 按钮透明
+                // 图例功能关闭 → 按钮透明
                 button.style.backgroundColor = '';
                 button.style.color = '';
             }
         }
 
-        // 更新内部状态变量以保持一致性
-        isCaptionEnabled = hasVisibleCaptions;
-        localStorage.setItem('captionEnabled', hasVisibleCaptions);
+        // 更新全局状态变量
+        const previousState = isCaptionEnabled;
+        isCaptionEnabled = savedState;
+        console.log('图例功能状态已同步:', savedState); // 调试日志
 
+        // 🔥 关键修复：如果状态发生变化，主动触发内容更新
+        if (previousState !== savedState) {
+            console.log('检测到图例状态变化，触发内容重新渲染'); // 调试日志
+            // 延迟执行，确保按钮状态更新完成
+            setTimeout(() => {
+                onUpdate();
+            }, 100);
+        }
     } catch (error) {
         console.warn('同步图例按钮状态失败:', error);
+        // 出错时默认关闭图例功能
+        isCaptionEnabled = false;
+        localStorage.setItem('captionEnabled', 'false');
+        console.log('图例功能状态已重置为默认值:', false); // 调试日志
     }
 }
 
 /**
- * 根据脚注实际显示状态同步按钮颜色
- * 检查预览区域中的脚注显示情况，确保按钮颜色与实际状态一致
+ * 根据保存的脚注功能状态同步按钮颜色
+ * 直接从localStorage读取脚注功能开关状态，确保按钮状态与功能状态一致
  */
 function syncFootnoteButtonState() {
-    const iframe = document.getElementById('rightFrame');
-    if (!iframe) return;
-
     try {
-        // 检查预览区域是否有脚注显示
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-
-        // 检查是否有脚注标记或脚注列表
-        const hasFootnoteMarkers = iframeDoc.querySelectorAll('sup.footnote').length > 0;
-        const hasFootnoteList = iframeDoc.querySelector('#footnotes') !== null;
-        const hasFootnoteHeader = Array.from(iframeDoc.querySelectorAll('h3')).some(h3 => h3.textContent === '引用链接');
-
-        // 检查是否有脚注显示
-        let hasVisibleFootnotes = hasFootnoteMarkers || hasFootnoteList || hasFootnoteHeader;
+        // 直接从localStorage读取脚注功能状态
+        const savedState = localStorage.getItem('footnotesEnabled') === 'true';
 
         // 同步按钮状态
         const footnoteButtons = document.querySelectorAll('button[onclick*="onFootnoteChange"]');
         if (footnoteButtons.length > 0) {
             const button = footnoteButtons[0];
-            if (hasVisibleFootnotes) {
-                // 有脚注显示 → 按钮蓝色
+            if (savedState) {
+                // 脚注功能开启 → 按钮蓝色
                 button.style.backgroundColor = '#007AFF';
                 button.style.color = 'white';
             } else {
-                // 无脚注显示 → 按钮透明
+                // 脚注功能关闭 → 按钮透明
                 button.style.backgroundColor = '';
                 button.style.color = '';
             }
         }
 
-        // 更新内部状态变量以保持一致性
-        isFootnotes = hasVisibleFootnotes;
+        // 更新全局状态变量
+        const previousState = isFootnotes;
+        isFootnotes = savedState;
+        console.log('脚注功能状态已同步:', savedState); // 调试日志
 
+        // 🔥 关键修复：如果状态发生变化，主动触发内容更新
+        if (previousState !== savedState) {
+            console.log('检测到脚注状态变化，触发内容重新渲染'); // 调试日志
+            // 延迟执行，确保按钮状态更新完成
+            setTimeout(() => {
+                onUpdate();
+            }, 100);
+        }
     } catch (error) {
         console.warn('同步脚注按钮状态失败:', error);
+        // 出错时默认关闭脚注功能
+        isFootnotes = false;
+        localStorage.setItem('footnotesEnabled', 'false');
+        console.log('脚注功能状态已重置为默认值:', false); // 调试日志
     }
 }
 

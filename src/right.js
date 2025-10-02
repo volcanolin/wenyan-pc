@@ -931,6 +931,13 @@ const EventHandler = {
             if (data.hasOwnProperty('isCaptionEnabled')) {
                 isCaptionEnabled = data.isCaptionEnabled;
             }
+            if (data.hasOwnProperty('isFootnotesEnabled')) {
+                if (data.isFootnotesEnabled) {
+                    addFootnotes();
+                } else {
+                    removeFootnotes();
+                }
+            }
 
             // 内容加载完成后，重新应用已保存的字体设置
             setTimeout(() => {
