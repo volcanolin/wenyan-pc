@@ -30,6 +30,13 @@
 #wenyan a {
     word-wrap: break-word;
     color: var(--primary-color);
+    text-decoration: none;
+}
+/* 脚注链接 */
+#wenyan a.footnote-link {
+    font-weight: bold;
+    text-decoration: underline;
+    color: var(--primary-color);
 }
 #wenyan p {
     color: var(--text-color);

@@ -40,6 +40,13 @@
     font-weight: 500;
     text-decoration: none;
 }
+/* 脚注链接 */
+#wenyan a.footnote-link {
+    font-weight: bold;
+    text-decoration: none;
+    border-bottom: 1px solid var(--main-6);
+    color: var(--main-6);
+}
 #wenyan h1,
 #wenyan h2,
 #wenyan h3,

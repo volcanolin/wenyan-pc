@@ -174,6 +174,9 @@ function setCustomTheme(css) {
     customCss = replaceCSSVariables(css);
     style.textContent = customCss;
     document.head.appendChild(style);
+
+    // 重置脚注样式以适应新主题
+    resetFootnoteStylesForNewTheme();
 }
 function setHighlight(css) {
     document.getElementById("hljs")?.remove();
@@ -547,6 +550,37 @@ function getContentForGzh() {
     processTaskLists(clonedWenyan);
     applyFontSettings(clonedWenyan);
 
+    // 处理脚注链接的特殊样式，确保微信公众号兼容性
+    // 首先从原始预览DOM获取脚注链接的实际颜色
+    const originalFootnoteLinks = wenyan.querySelectorAll('a.footnote-link');
+    let linkColor = '#0069c2'; // 默认颜色
+
+    if (originalFootnoteLinks.length > 0) {
+        linkColor = window.getComputedStyle(originalFootnoteLinks[0]).color;
+    }
+
+    const footnoteLinks = clonedWenyan.querySelectorAll('a.footnote-link');
+    footnoteLinks.forEach(link => {
+        // 移除CSS类，改为内联样式
+        link.classList.remove('footnote-link');
+
+        // 创建包装span确保下划线在微信公众号中正常显示
+        // 使用从原始预览DOM获取的颜色，确保与预览区完全一致
+        const wrapper = document.createElement('span');
+        wrapper.style.textDecoration = 'underline';
+        wrapper.style.textDecorationColor = 'inherit';
+        wrapper.style.fontWeight = 'bold';
+        wrapper.style.color = linkColor;
+
+        // 替换链接为包装后的结构
+        link.parentNode.replaceChild(wrapper, link);
+        wrapper.appendChild(link);
+
+        // 移除链接自身的下划线避免冲突
+        link.style.textDecoration = 'none';
+        link.style.color = linkColor;
+    });
+
     clonedWenyan.setAttribute("data-provider", "WenYan");
     return `${clonedWenyan.outerHTML.replace(/class="mjx-solid"/g, 'fill="none" stroke-width="70"')}`;
 }
@@ -633,25 +667,17 @@ function addFootnotes(listStyle) {
     links.forEach((linkElement) => {
         const title = linkElement.textContent || linkElement.innerText;
         const href = linkElement.getAttribute("href");
-        
+
         footnotes.push([++footnoteIndex, title, href]);
-        
-        // 创建链接文本包装器，添加加粗和下划线样式
-        const styledLink = document.createElement('strong');
-        styledLink.style.textDecoration = 'underline'; // 添加下划线
-        const computedStyle = window.getComputedStyle(linkElement);
-        const linkColor = computedStyle.getPropertyValue('color');
-        styledLink.style.textDecorationColor = linkColor; // 下划线颜色跟随链接颜色
-        styledLink.style.color = linkColor; // 文字颜色跟随链接颜色
-        const linkClone = linkElement.cloneNode(true);
-        styledLink.appendChild(linkClone);
-        linkElement.replaceWith(styledLink);
-        
+
+        // 添加脚注链接样式类，让CSS控制样式
+        linkElement.classList.add('footnote-link');
+
         // 添加脚注标记
         const footnoteMarker = document.createElement('sup');
         footnoteMarker.setAttribute("class", "footnote");
         footnoteMarker.innerHTML = `[${footnoteIndex}]`;
-        styledLink.after(footnoteMarker);
+        linkElement.after(footnoteMarker);
     });
     if (footnoteIndex > 0) {
         if (!listStyle) {
@@ -695,15 +721,10 @@ function removeFootnotes() {
         }
     });
 
-    // 恢复原始链接样式
-    const styledLinks = document.querySelectorAll('strong > a');
-    styledLinks.forEach(styledLink => {
-        const strongParent = styledLink.parentElement;
-        if (strongParent && strongParent.tagName === 'STRONG') {
-            // 创建新的链接元素，保持原始属性但移除加粗样式
-            const newLink = styledLink.cloneNode(true);
-            strongParent.parentNode.replaceChild(newLink, strongParent);
-        }
+    // 移除脚注链接样式类
+    const footnoteLinks = document.querySelectorAll('a.footnote-link');
+    footnoteLinks.forEach(link => {
+        link.classList.remove('footnote-link');
     });
 
     // 移除脚注标记
@@ -711,6 +732,28 @@ function removeFootnotes() {
     footnoteMarkers.forEach(marker => {
         marker.remove();
     });
+}
+
+/**
+ * 重置脚注样式以适应新主题
+ * 在主题切换时调用，确保脚注样式与新主题同步
+ */
+function resetFootnoteStylesForNewTheme() {
+    // 检查是否启用了脚注功能
+    const hasFootnotesEnabled = document.querySelectorAll('sup.footnote').length > 0;
+
+    if (hasFootnotesEnabled) {
+        // 获取当前的脚注状态（通过是否有脚注标记判断）
+        const listStyle = document.querySelector('#footnotes ul') ? true : false;
+
+        // 先移除所有脚注
+        removeFootnotes();
+
+        // 延迟重新添加脚注，确保新样式已加载
+        setTimeout(() => {
+            addFootnotes(listStyle);
+        }, 50);
+    }
 }
 
 function tableToAsciiArt(table) {

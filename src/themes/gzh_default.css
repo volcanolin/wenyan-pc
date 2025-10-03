@@ -161,6 +161,14 @@
 #wenyan a {
     word-wrap: break-word;
     color: #0069c2;
+    text-decoration: none;
+}
+
+/* 脚注链接 */
+#wenyan a.footnote-link {
+    font-weight: bold;
+    text-decoration: underline;
+    color: #0069c2;
 }
 /* 原始链接旁脚注上标 */
 #wenyan .footnote {

@@ -97,6 +97,13 @@
     color: rgb(239, 112, 96);
     border-bottom: 1px solid rgb(239, 112, 96);
 }
+/* 脚注链接 */
+#wenyan a.footnote-link {
+    font-weight: bold;
+    text-decoration: none;
+    border-bottom: 1px solid rgb(239, 112, 96);
+    color: rgb(239, 112, 96);
+}
 #wenyan p code,
 #wenyan li code {
     font-size: 0.9em;
