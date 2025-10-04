@@ -82,3 +82,40 @@ npm run tauri
 - **图像处理**: 外部图像转换为 base64 以实现导出功能
 - **数学公式支持**: MathJax 集成用于 LaTeX 渲染
 - **代码块样式**: 不同平台中代码块的特殊处理
+
+## 脚注系统 (v2.4.8+)
+
+### 核心实现机制
+- **CSS类控制**: 脚注链接使用 `footnote-link` CSS 类控制样式，避免 JavaScript 硬编码
+- **样式统一**: 所有内置主题支持统一的脚注样式规范，确保视觉一致性
+- **自动重置**: 主题切换时自动调用 `resetFootnoteStylesForNewTheme()` 重置脚注样式
+
+### 样式规范
+```css
+/* 基础脚注链接样式 */
+#wenyan a.footnote-link {
+    font-weight: bold;
+    text-decoration: underline; /* 或使用 border-bottom */
+    color: [主题特定颜色];
+}
+```
+
+### 关键函数和流程
+- **`addFootnotes()`**: 添加脚注，将链接转换为脚注格式，添加 `footnote-link` 类
+- **`removeFootnotes()`**: 移除脚注，删除 `footnote-link` 类和脚注元素
+- **`getContentForGzh()`**: 微信公众号特殊处理，使用 span 包装确保兼容性
+
+### 微信公众号兼容性 (v2.4.8+)
+- **特殊处理**: 在 `getContentForGzh()` 中为脚注链接添加 span 包装
+- **颜色同步**: 从原始预览 DOM 获取脚注链接的实际颜色
+- **结构**: `<span style="text-decoration: underline; color: [color]"><a href="...">链接</a></span>`
+
+### 主题适配原则
+- **统一规范**: 使用 `border-bottom` 或 `text-decoration: underline` 中的一种，避免双重下划线
+- **颜色继承**: 脚注链接颜色与主题链接颜色保持一致
+- **样式隔离**: 脚注链接样式不影响普通链接样式
+
+### 开发注意事项
+- 新增主题必须包含 `#wenyan a.footnote-link` 样式定义
+- 避免在 JavaScript 中直接设置内联样式
+- 主题切换时确保脚注状态正确保持和重置

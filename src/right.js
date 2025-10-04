@@ -153,8 +153,19 @@ function refreshContentWithFont(content) {
     const currentFont = FontManager.getCurrentFont();
     const fontFamily = FontManager.getFontFamily(currentFont);
 
+    // 保存当前脚注状态
+    const wasFootnotesEnabled = document.querySelectorAll('#footnotes').length > 0;
+    const footnoteLinks = document.querySelectorAll('a.footnote-link').length;
+
     // 重新渲染内容
     setContent(content);
+
+    // 恢复脚注状态（如果之前启用了脚注）
+    if (wasFootnotesEnabled || footnoteLinks > 0) {
+        setTimeout(() => {
+            addFootnotes();
+        }, 50); // 延迟确保DOM完全更新
+    }
 
     // 重新应用字体设置
     if (fontFamily) {
@@ -919,7 +930,7 @@ function replaceCSSVariables(css) {
 
 function buildPseudoSpan(beforeRresults) {
     // 创建一个新的 <span> 元素
-    const span = document.createElement('section');
+    const span = document.createElement('span');
     // 将伪类的内容和样式应用到 <span> 标签
     if (beforeRresults.get("content")) {
         span.textContent = beforeRresults.get("content").replace(/['"]/g, '');
@@ -946,7 +957,26 @@ function buildPseudoSpan(beforeRresults) {
         }
     }
     const entries = Array.from(beforeRresults.entries());
-    const cssString = entries.map(([key, value]) => `${key}: ${value}`).join('; ');
+    let cssString = entries.map(([key, value]) => `${key}: ${value}`).join('; ');
+
+    // 特殊处理：确保伪元素保持原有的布局特性
+    const display = beforeRresults.get("display");
+    const verticalAlign = beforeRresults.get("vertical-align");
+
+    // 如果原始样式没有明确设置display，默认使用inline-block以避免换行
+    if (!display && (!cssString.includes('display:') || !cssString.includes('display :'))) {
+        span.style.display = 'inline-block';
+    }
+
+    // 保持垂直对齐，特别是对于三角形装饰
+    if (verticalAlign) {
+        span.style.verticalAlign = verticalAlign;
+    } else if (cssString.includes('border-bottom') && !cssString.includes('vertical-align')) {
+        // 对于border技巧创建的三角形，默认使用bottom对齐
+        span.style.verticalAlign = 'bottom';
+    }
+
+    // 应用其他样式
     span.style.cssText = cssString;
     return span;
 }
