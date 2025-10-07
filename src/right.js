@@ -20,6 +20,26 @@ let isScrollingFromScript = false;
 let customCss = "";
 let highlightCss = "";
 let isCaptionEnabled = false;
+
+// 脚注状态管理 (v2.4.10+)
+const FootnoteState = {
+    STORAGE_KEY: 'wenyan_footnotes_enabled',
+
+    // 获取脚注启用状态
+    isEnabled() {
+        return localStorage.getItem(this.STORAGE_KEY) === 'true';
+    },
+
+    // 设置脚注启用状态
+    setEnabled(enabled) {
+        localStorage.setItem(this.STORAGE_KEY, enabled.toString());
+    },
+
+    // 移除脚注状态存储
+    clear() {
+        localStorage.removeItem(this.STORAGE_KEY);
+    }
+};
 // ------- marked.js默认配置开始 -------
 // 处理frontMatter的函数
 function preprocess(markdown) {
@@ -153,15 +173,11 @@ function refreshContentWithFont(content) {
     const currentFont = FontManager.getCurrentFont();
     const fontFamily = FontManager.getFontFamily(currentFont);
 
-    // 保存当前脚注状态
-    const wasFootnotesEnabled = document.querySelectorAll('#footnotes').length > 0;
-    const footnoteLinks = document.querySelectorAll('a.footnote-link').length;
-
     // 重新渲染内容
     setContent(content);
 
-    // 恢复脚注状态（如果之前启用了脚注）
-    if (wasFootnotesEnabled || footnoteLinks > 0) {
+    // 恢复脚注状态（使用持久化状态，不受DOM重新渲染影响）
+    if (FootnoteState.isEnabled()) {
         setTimeout(() => {
             addFootnotes();
         }, 50); // 延迟确保DOM完全更新
@@ -672,6 +688,17 @@ function scroll(scrollFactor) {
     requestAnimationFrame(() => isScrollingFromScript = false);
 }
 function addFootnotes(listStyle) {
+    // 防止重复添加：先清理已存在的脚注
+    const existingFootnoteMarkers = document.querySelectorAll('sup.footnote');
+    const existingFootnoteLinks = document.querySelectorAll('a.footnote-link');
+    const existingFootnotesContainer = document.querySelector('#footnotes');
+    const existingFootnoteHeaders = document.querySelectorAll('h3');
+
+    // 如果已经存在脚注，说明是重复调用，直接返回
+    if (existingFootnoteMarkers.length > 0) {
+        return;
+    }
+
     let footnotes = [];
     let footnoteIndex = 0;
     const links = document.querySelectorAll('a[href]');
@@ -711,6 +738,9 @@ function addFootnotes(listStyle) {
             document.getElementById("wenyan").innerHTML += footnotesHtml;
         }
     }
+
+    // 保存脚注启用状态到持久化存储
+    FootnoteState.setEnabled(true);
 }
 
 /**
@@ -743,6 +773,9 @@ function removeFootnotes() {
     footnoteMarkers.forEach(marker => {
         marker.remove();
     });
+
+    // 清除脚注启用状态从持久化存储
+    FootnoteState.setEnabled(false);
 }
 
 /**
@@ -750,10 +783,8 @@ function removeFootnotes() {
  * 在主题切换时调用，确保脚注样式与新主题同步
  */
 function resetFootnoteStylesForNewTheme() {
-    // 检查是否启用了脚注功能
-    const hasFootnotesEnabled = document.querySelectorAll('sup.footnote').length > 0;
-
-    if (hasFootnotesEnabled) {
+    // 检查是否启用了脚注功能（使用持久化状态）
+    if (FootnoteState.isEnabled()) {
         // 获取当前的脚注状态（通过是否有脚注标记判断）
         const listStyle = document.querySelector('#footnotes ul') ? true : false;
 
@@ -1011,6 +1042,7 @@ const EventHandler = {
                     removeFootnotes();
                 }
             }
+            // 注意：脚注状态的恢复现在由 refreshContentWithFont() 统一处理
 
             // 内容加载完成后，重新应用已保存的字体设置
             setTimeout(() => {
@@ -1029,7 +1061,7 @@ const EventHandler = {
                 isCaptionEnabled = data.isCaptionEnabled;
             }
 
-            // 内容重新渲染完成后，重新应用已保存的字体设置
+            // 内容重新渲染完成后，重新应用已保存的字体设置和脚注状态
             setTimeout(() => {
                 const savedFont = localStorage.getItem('preferred-font');
                 if (savedFont && savedFont !== 'theme') {
@@ -1037,6 +1069,11 @@ const EventHandler = {
                     if (fontFamily) {
                         FontManager.applyToPreview(fontFamily);
                     }
+                }
+
+                // 恢复脚注状态（使用持久化状态，确保内容修改后脚注功能保持开启）
+                if (FootnoteState.isEnabled()) {
+                    addFootnotes();
                 }
             }, 50); // 短暂延迟确保DOM更新完成
         },
