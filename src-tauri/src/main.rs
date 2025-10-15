@@ -32,7 +32,7 @@ fn main() {
                         "about",     // 新窗口的 id
                         tauri::WindowUrl::App("about.html".into()) // 指定关于页面的路径
                     )
-                    .title("关于")
+                    .title("关于 文颜-rev")
                     .inner_size(500.0, 350.0)
                     .resizable(false) // 禁用窗口大小调整
                     .minimizable(false) // 禁用最小化按钮

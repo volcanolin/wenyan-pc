@@ -5,7 +5,7 @@
         "withGlobalTauri": true
     },
     "package": {
-        "productName": "文颜",
+        "productName": "文颜-rev",
         "version": "../package.json"
     },
     "tauri": {
@@ -46,7 +46,7 @@
         "windows": [
             {
                 "label": "main",
-                "title": "文颜",
+                "title": "文颜-rev",
                 "decorations": false,
                 "width": 1200,
                 "height": 800,
@@ -60,7 +60,7 @@
         "bundle": {
             "active": true,
             "targets": "all",
-            "identifier": "com.yztech.WenYan",
+            "identifier": "com.github.volcanolin.wenyan-rev",
             "icon": [
                 "icons/32x32.png",
                 "icons/128x128.png",
@@ -71,7 +71,7 @@
             "resources": [
                 "resources/*"
             ],
-            "copyright": "© 2024 Lei Cao. All rights reserved.",
+            "copyright": "Original: © 2024 Lei Cao, Enhanced: © 2025 volcanolin",
             "windows": {
                 "wix": {
                     "language": "zh-CN"
