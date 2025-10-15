@@ -1,6 +1,6 @@
 [package]
 name = "wenyan-rev"
-version = "2.4.10.1"
+version = "2.4.11"
 description = "文颜-rev - 增强版多平台写作工具"
 authors = ["caol64@gmail.com"]
 edition = "2021"
