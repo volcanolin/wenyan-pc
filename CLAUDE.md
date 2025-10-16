@@ -1,6 +1,10 @@
-# CLAUDE.md
+# CLAUDE.md - 文颜-rev 项目指南
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+**原版作者**: Lei Cao © 2024
+**增强版**: volcanolin © 2025
+**项目标识符**: com.github.volcanolin.wenyan-rev
 
 ## 开发命令
 
@@ -41,18 +45,19 @@ git push origin vX.X.X
 - Rust 后端处理剪贴板操作和系统集成
 - 使用 `tauri-plugin-sql` 的 SQLite 数据库存储自定义主题
 
-## 架构概览
+## 架构概览 - 文颜-rev
 
 ### 应用程序结构
 - **前端**: 原生 JavaScript，带有多个用于编辑器/预览的 iframe
 - **后端**: Tauri (Rust)，带有剪贴板和数据库插件
 - **主窗口**: 分割视图，左侧为 markdown 编辑器，右侧为实时预览
 - **自定义主题系统**: 基于 CSS，使用 SQLite 存储用户主题
+- **应用标识**: `com.github.volcanolin.wenyan-rev` (独立于原版，可同时安装)
 
 ### 关键文件和组件
 
 #### 主应用程序入口点
-- `src/index.html` - 主应用程序窗口，包含标题栏和 iframe 容器
+- `src/index.html` - 主应用程序窗口，包含标题栏和 iframe 容器（文颜-rev）
 - `src/main.js` - 主应用程序逻辑，主题管理，平台切换
 - `src/right.js` - Markdown 处理，渲染和平台特定输出
 
